@@ -1,10 +1,10 @@
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│                                 Proj3a                                      │
-@│ First assembler program from the R Pi assembly book.                        │
+@│                   part2                                                     │
+@│                                                                             │
 @└─────────────────────────────────────────────────────────────────────────────┘  
-.GLOBAL _start
 
-_start:
-    mov r0, #65
+.GLOBAL _part2
+
+_part2:
     mov r7, #1
-    swi 0        @Supervisor call exceptoin. 24-bit bitfield encoded in instruction. SVC currently.
+    SWI 0

@@ -1,0 +1,98 @@
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│                             ASM Notes                                       │
+@│                                                                             │
+@└─────────────────────────────────────────────────────────────────────────────┘  
+
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│      Twos complemen            │
+@└────────────────────────────────┘
+@ To represent a negative number in binary use twos complement. To represent a -3
+@ in binary first take the binary value for 3
+@ 1. 0000 0011 (3b)
+@ 2. 1111 1100 Invert the bits (Ones complement)
+@ 3. 0000 0001 Add one to it.
+@    1111 1101 You get twos complement -3
+
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ARM User Mode Registers Bank    │
+@└────────────────────────────────┘
+@┍━━━━━━━━━━━━━━━━━━━┑
+@├───────────────────┤
+@│ R0 │ Available    │
+@├───────────────────┤
+@│ R1 │ Available    │
+@├───────────────────┤
+@│ R2 │ Available    │
+@├───────────────────┤
+@│ R3 │ Available    │
+@├───────────────────┤
+@│ R4 │ Available    │
+@├───────────────────┤
+@│ R5 │ Available    │
+@├───────────────────┤
+@│ R6 │ Available    │
+@├───────────────────┤
+@│ R7 │ Available    │
+@├───────────────────┤
+@│ R8 │ Available    │
+@├───────────────────┤
+@│ R9 │ Available    │
+@├───────────────────┤
+@│ R10│ Available    │
+@├───────────────────┤
+@│ R11│ Available    │
+@├───────────────────┤
+@│ R12│ Available    │
+@├───────────────────┤
+@│ R13│ stack pntr   │
+@├───────────────────┤
+@│ R14│ Link registe │
+@├───────────────────┤
+@│ R15│ Program Cntr │
+@├───────────────────┤
+@│ Current program   │
+@│ Status register   │
+@└───────────────────┘
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│Status Register Configuration   │
+@└────────────────────────────────┘
+ ┌──────────────────────────────────┐
+@│31│30│29│28│27...8│7│6│5│4│3│2│1│0│
+@├──────────────────────────────────┤
+@│N │Z │C │V │      │I│F│T│ Mode    │
+@└──────────────────────────────────┘
+@ N = Negative flag
+@ Z = Zero flag
+@ C = Carry flag
+@ V = Overflow flag
+@ I = Interupt disable bits
+@ F = Interupt disable bits
+@ T = Processor states 
+@ Mode = processor mode. Usually user mode
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ARM Instructions                │
+@└────────────────────────────────┘
+ldr r1,[r5,#1]   @ load register. load contents at location in r5 +1 byte
+ldr r1,[r5]      @ load contents at location in r5
+str r1,[r6]      @ store to memory. Store content r1 in location r6. 
+@[rX] is called an addressing mode. ARM instructions have several addressing modes.
+pc               @ Program counter nmeomonic. = r15
+beq              @ Branch if EQual. Jump to some label if Z flag = 1
+bne              @ Branch if Not Equal. Jump to some label if Z flag = 0
+                 @ mnemonic that allow us to test the Status Register Flag Z
+cmp <op1>,<op2>  @ CoMPare. Performs a notational subtraction. op1 - op2. The physical result of the subtraction is ignored, but it updates the Status Register flags according to the outcome of the subtraction, which will be postive, zero, or negative (there can never be a carry). If the result of the subtraction was 0 Zero flag would be set. op1 is always a register. op2 can be a register or a specific or a immediate value.
+                 @ Example: 
+                    cmp r0, r1
+                    beq zeroflagset  @Branch to the label 'zeroflagset'.
+cpn <op1>,<op2>  @ ComPare Negative.
+                 @ cmp and cpn are the only instrctions that directly affect the condition of the Status Register. By default, the rest of the ARM instruction set does not update the Status Register.
+sub r0,r0,r1     @ subtract r1 from r0 store in r0
+
+@S Suffix. ARM provides a method of allowing an operation such as sub to update the Status Register. This is done by use the Set suffix. All we have to do is append 'S' to the end of the mnemonix we want to use to modify the flags.
+@      Example:
+       subs r0, r0, r1   @This subtracts the contents of r1 from r0 leaving the result in r0 and at the same time updating the flags in the Status register.
+b                @ Branch to a label
