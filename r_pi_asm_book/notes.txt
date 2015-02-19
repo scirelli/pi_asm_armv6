@@ -3,6 +3,7 @@
 @│                                                                             │
 @└─────────────────────────────────────────────────────────────────────────────┘  
 
+@Bit=1, Nibble = 4bits, Byte = 8bits, Halfword = 16bits, Word = 32bits, Doubleword = 64bits*/
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│      Twos complemen            │
@@ -88,7 +89,7 @@ cmp <op1>,<op2>  @ CoMPare. Performs a notational subtraction. op1 - op2. The ph
                  @ Example: 
                     cmp r0, r1
                     beq zeroflagset  @Branch to the label 'zeroflagset'.
-cpn <op1>,<op2>  @ ComPare Negative.
+cmn <op1>,<op2>  @ ComPare Negative.
                  @ cmp and cpn are the only instrctions that directly affect the condition of the Status Register. By default, the rest of the ARM instruction set does not update the Status Register.
 sub r0,r0,r1     @ subtract r1 from r0 store in r0
 
