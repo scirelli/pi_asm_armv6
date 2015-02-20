@@ -17,5 +17,5 @@ try2:
     mov r0, #3
 
 end:
-    mov  r7, #1      @ For some reason required or u get a segmanet fault
+    mov  r7, #1      @ exit through syscall
     SWI  0

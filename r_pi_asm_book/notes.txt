@@ -5,6 +5,30 @@
 
 @Bit=1, Nibble = 4bits, Byte = 8bits, Halfword = 16bits, Word = 32bits, Doubleword = 64bits*/
 
+@ Almost every ARM instruction can be executed conditionally on the state of the ALU status flags in the Current Program Status Register (CPSR). Refer to Table 2.1 for a list of the suffixes to add to instructions to make them conditional.
+@ Table 2.1 http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0068b/ch02s05s02.html
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Table 4.2./2.1 ARM condition codes                                    │
+@├───────────────────────────────────────────────────────────────────────┤
+@│ Suffix  Flags                           Meaning                       │
+@│ EQ      Z set                           Equal                         │
+@│ NE      Z clear                         Not equal                     │
+@│ CS/HS   C set                           Higher or same (unsigned >= ) │
+@│ CC/LO   C clear                         Lower (unsigned < )           │
+@│ MI      N set                           Negative                      │
+@│ PL      N clear                         Positive or zero              │
+@│ VS      V set                           Overflow                      │
+@│ VC      V clear                         No overflow                   │
+@│ HI      C set and Z clear               Higher (unsigned <= )         │
+@│ LS      C clear or Z set                Lower or same (unsigned <= )  │
+@│ GE      N and V the same                Signed >=                     │
+@│ LT      N and V different               Signed <                      │
+@│ GT      Z clear, and N and V the same   Signed >                      │
+@│ LE      Z set, or N and V different     Signed <=                     │
+@│ AL      Any Always                      (usually omitted)             │
+@└───────────────────────────────────────────────────────────────────────┘
+
+
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│      Twos complemen            │
 @└────────────────────────────────┘

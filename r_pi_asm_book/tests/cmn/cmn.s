@@ -23,7 +23,7 @@ notnegative:
     add   r0, r0, #1
 
 end:
-    mov  r7, #1          @ For some reason required or u get a segmanet fault
+    mov  r7, #1          @ exit through syscall
     SWI  0
 
 

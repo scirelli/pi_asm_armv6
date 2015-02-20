@@ -19,7 +19,7 @@ notnegative:
     sub  r0, r0, r1      @ Set the exit code to the result of the subtraction.
 
 end:
-    mov  r7, #1          @ For some reason required or u get a segmanet fault
+    mov  r7, #1          @  exit through syscall
     SWI  0
 
 
