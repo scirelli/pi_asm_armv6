@@ -1,4 +1,4 @@
-FILE=sub
+FILE=mla
 
 all: $(FILE)
 

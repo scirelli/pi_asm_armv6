@@ -1,4 +1,4 @@
-FILE=sub
+FILE=mvn
 
 all: $(FILE)
 
