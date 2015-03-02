@@ -1,4 +1,4 @@
-FILE=cmn_2
+FILE=str
 
 all: $(FILE)
 
