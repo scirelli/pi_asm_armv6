@@ -121,3 +121,32 @@ sub r0,r0,r1     @ subtract r1 from r0 store in r0
 @      Example:
        subs r0, r0, r1   @This subtracts the contents of r1 from r0 leaving the result in r0 and at the same time updating the flags in the Status register.
 b                @ Branch to a label
+
+
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Shifts and Rotates             │
+@└────────────────────────────────┘
+Three types of shifts:
+    Logical: Logically shifting a number left to right by one position has the effect of doubleing it or halving it. By increasing the number of logical shifts you can multiply and divide numbers accordingly.
+    Arithimetic
+    Rotate:
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Mnemonic  │  Meaning                 │
+@├──────────────────────────────────────┤
+@│   LSL     │ Logical shift left       │
+@│   LSR     │ Logical shift right      │
+@│   ASL     │ Arithimetic shift left   │
+@│   ASR     │ Arithimetic shift right  │
+@│   ROR     │ Rotate right             │
+@│   RRX     │ Rotate Right with eXtend │
+@└──────────────────────────────────────┘
+
+Logical shift left
+@┌───────────────────────────────────────────────────────────────────────┐
+@│ LSL    │ C   │           Word               │     │    │    │    │    │
+@├───────────────────────────────────────────────────────────────────────┤
+@│ Before │ x   │ b31 │ b30  │ b29 │ b28 │ b27 │ ... │ b3 │ b2 │ b1 │ b0 │
+@│ After  │ b31 │ b30 │ b29  │ b28 │ b27 │ b26 │ ... │ b2 │ b` │ b0 │ 0  │
+@└───────────────────────────────────────────────────────────────────────┘

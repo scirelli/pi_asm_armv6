@@ -1,4 +1,4 @@
-FILE=printBin
+FILE=printBinEfficient
 
 all: $(FILE)
 
