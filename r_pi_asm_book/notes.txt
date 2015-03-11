@@ -129,9 +129,9 @@ b                @ Branch to a label
 @└────────────────────────────────┘
 Three types of shifts:
     Logical: Logically shifting a number left to right by one position has the effect of doubleing it or halving it. By increasing the number of logical shifts you can multiply and divide numbers accordingly.
-    Arithimetic
-    Rotate:
-
+    Arithimetic: In an arithmetical shift the sign bit is preserved. Ensures that division is performed correctly for both positive and negative numbers.
+    Rotate Right: Rotate Right (ROR) moves the bits out from the low end and feeds them straight back in the high end. The last bit rotated out is also copied into the Carry Flag as well as being rotated around.
+    Rotate Extended: Cannot specify the number of movements it only shifts right once. The carry flag value is dropped into b31 and the value of b0 is put into the carry flag. Pretty much a 32bit shift right
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ Mnemonic  │  Meaning                 │
 @├──────────────────────────────────────┤
@@ -143,10 +143,100 @@ Three types of shifts:
 @│   RRX     │ Rotate Right with eXtend │
 @└──────────────────────────────────────┘
 
-Logical shift left
+Logical shift left: bit b31 drops into the carry flag
 @┌───────────────────────────────────────────────────────────────────────┐
 @│ LSL    │ C   │           Word               │     │    │    │    │    │
 @├───────────────────────────────────────────────────────────────────────┤
 @│ Before │ x   │ b31 │ b30  │ b29 │ b28 │ b27 │ ... │ b3 │ b2 │ b1 │ b0 │
-@│ After  │ b31 │ b30 │ b29  │ b28 │ b27 │ b26 │ ... │ b2 │ b` │ b0 │ 0  │
+@│ After  │ b31 │ b30 │ b29  │ b28 │ b27 │ b26 │ ... │ b2 │ b1 │ b0 │ 0  │
 @└───────────────────────────────────────────────────────────────────────┘
+
+Logical shift right: Bit b0 drops off into the carry flag
+@┌───────────────────────────────────────────────────────────────────────┐
+@│ LSL    │ C   │           Word               │     │    │    │    │    │
+@├───────────────────────────────────────────────────────────────────────┤
+@│ Before │ x   │ b31 │ b30  │ b29 │ b28 │ b27 │ ... │ b3 │ b2 │ b1 │ b0 │
+@│ After  │ b0  │  0  │ b31  │ b30 │ b29 │ b28 │ ... │ b4 │ b3 │ b2 │ b1 │
+@└───────────────────────────────────────────────────────────────────────┘
+
+Arithmeticl shift right: Bit b0 drops off into the carry flag
+@┌───────────────────────────────────────────────────────────────────────┐
+@│ LSL    │ C   │           Word               │     │    │    │    │    │
+@├───────────────────────────────────────────────────────────────────────┤
+@│ Before │ x   │ b31 │ b30  │ b29 │ b28 │ b27 │ ... │ b3 │ b2 │ b1 │ b0 │
+@│ After  │ b0  │ b31 │ b31  │ b30 │ b29 │ b28 │ ... │ b4 │ b3 │ b2 │ b1 │
+@└───────────────────────────────────────────────────────────────────────┘
+
+Rotation Right
+@┌───────────────────────────────────────────────────────────────────────┐
+@│ LSL    │ C   │           Word               │     │    │    │    │    │
+@├───────────────────────────────────────────────────────────────────────┤
+@│ Before │ x   │ b31 │ b30  │ b29 │ b28 │ b27 │ ... │ b3 │ b2 │ b1 │ b0 │
+@│ After  │ b0  │ b0  │ b31  │ b30 │ b29 │ b28 │ ... │ b4 │ b3 │ b2 │ b1 │
+@└───────────────────────────────────────────────────────────────────────┘
+
+Rotation Right Extended
+@┌───────────────────────────────────────────────────────────────────────┐
+@│ LSL    │ C   │           Word               │     │    │    │    │    │
+@├───────────────────────────────────────────────────────────────────────┤
+@│ Before │ x   │ b31 │ b30  │ b29 │ b28 │ b27 │ ... │ b3 │ b2 │ b1 │ b0 │
+@│ After  │ b0  │  x  │ b31  │ b30 │ b29 │ b28 │ ... │ b4 │ b3 │ b2 │ b1 │
+@└───────────────────────────────────────────────────────────────────────┘
+
+
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Immediate Constany Range       │
+@└────────────────────────────────┘
+Immediates only have 12bits to represnt them. 0000 0000 0000.
+The 12-bit field is split into two, one part of 8bits xxxx 0000 0000 and one part 4-bits 0000 xxxx xxxx.
+The 8-bit field is used to represent a numeric constant. The 4-bit field one of 16 different positions (them selves then shifted by two) which the 8-bit value may be rotated to through an even number of positions.
+
+Examples:
+Using 173 as immediiate constant, in binary this is:
+00000000 00000000 00000000 10101101
+The value can be presented in 8-bits, so no shift is required and the position bits will be set to 0.
+
+Examine the number 19,968. In binary this is:
+00000000 00000000 01001110 00000000
+
+If we compare this to the patterns in Figure below, we can see this as the value placed at position 12. To create this number as an immediate operand we would use 78 (01001110) and rotated it right by 24.
+
+Bit31                           Bit0  Position  ROR
+++++++++ ++++++++ ++++++++ 76543210   0         0
+10++++++ ++++++++ ++++++++ ++765432   1         2
+3210++++ ++++++++ ++++++++ ++++7654   2         4
+543210++ ++++++++ ++++++++ ++++++76   3         6
+76543210 ++++++++ ++++++++ ++++++++   4         8
+++765432 10++++++ ++++++++ ++++++++   5         10
+++++7654 3210++++ ++++++++ ++++++++   6         12
+++++++76 543210++ ++++++++ ++++++++   7         14
+++++++++ 76543210 ++++++++ ++++++++   8         16
+++++++++ ++765432 10++++++ ++++++++   9         18
+++++++++ ++++7654 3210++++ ++++++++   10        20
+++++++++ ++++++76 543210++ ++++++++   11        22
+++++++++ ++++++++ 76543210 ++++++++   12        24
+++++++++ ++++++++ ++765432 10++++++   13        26
+++++++++ ++++++++ ++++7654 3210++++   14        28
+++++++++ ++++++++ ++++++76 543210++   15        30
+
+This provides us with the second way that an immediate operand can be specified as a shifted operand, and this takes the format shown:
+Instruction (<Suffic>) <Op1>, <Op2>, <Op3>, <Shift>
+Example:
+mov r0, r1, ror #24 @ store in r0, r1 right rotated by 24
+
+Of course, we can use all these values directly as immediate constants as the assembler will resolve them directly for us. 
+mov r0, #19968
+
+It is the values that cannot be calculated in this way through fig above that are the issue.
+
+Although 257 cannot be used as an immediate constant, it can be created by storing 256 in a register then adding 1.
+
+add r0, r1, #257 @ Invalid constant error
+
+mov r2, #256
+add r2, r2, #1
+add r0, r1, r2   @add 257 to r1 put it in r0
+
+
+
