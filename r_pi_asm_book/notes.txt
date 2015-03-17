@@ -122,6 +122,8 @@ sub r0,r0,r1     @ subtract r1 from r0 store in r0
        subs r0, r0, r1   @This subtracts the contents of r1 from r0 leaving the result in r0 and at the same time updating the flags in the Status register.
 b                @ Branch to a label
 
+smull (<suffix>) <destLo>, <destHi>, <Op1>, <Op2>  @ Signed multiplication using 2 32-bit registers
+umull (<suffix>) <destLo>, <destHi>, <Op1>, <Op2>  @ Unsigned multiplication using 2 32-bit registers
 
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
