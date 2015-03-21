@@ -1,0 +1,38 @@
+Command         Example             Description
+run                                 start program
+quit                                quit out of gdb
+cont                                continue execution after a break
+break [addr]    break *_start+5     sets a breakpoint
+delete [n]      delete 4            removes nth breakpoint
+delete                              removes all breakpoints
+info break                          lists all breakpoints
+stepi                               execute next instruction
+s                                   execute next instruction
+stepi [n]       stepi 4             execute next n instructions
+nexti                               execute next instruction, stepping over function calls
+nexti [n]       nexti 4             execute next n instructions, stepping over function calls
+where                               show where execution halted
+disas [addr]    disas _start        disassemble instructions at given address
+info registers                      dump contents of all registers
+print/d [expr]  print/d $ecx        print expression in decimal
+print/x [expr]  print/x $ecx        print expression in hex
+print/t [expr]  print/t $ecx        print expression in binary
+x/NFU [addr]    x/12xw &msg         Examine contents of memory in given format
+display [expr]  display $eax        automatically print the expression each time the program is halted
+info display                        show list of automatically displays
+undisplay [n]   undisplay 1         remove an automatic display
+layout [name]   layout regs         split screen showing registers and code
+                layout src
+                layout next
+                layout prev
+focus [name]    focus src           set scroll focus to named window
+                focus cmd
+                focus reg
+winheight [name] [+/-] #lines       change the height of the focused widnow   
+tui reg float                       show the floating point reg window
+tui reg next                        show the next register group
+x/nfu <addr>                        '/' signify change i nthe defaults
+                                    f   being format which is hex by default
+                                    n   number of units
+                                    u   unit size. b=byte, h=halfwords, w=word, g=giant word (eight bytes)
+                                    <addr> the start address from which this is to happen

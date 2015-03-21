@@ -123,7 +123,31 @@ sub r0,r0,r1     @ subtract r1 from r0 store in r0
 b                @ Branch to a label
 
 smull (<suffix>) <destLo>, <destHi>, <Op1>, <Op2>  @ Signed multiplication using 2 32-bit registers
+                                                   @ op1 and op2 are assumed to be in twos complement form
 umull (<suffix>) <destLo>, <destHi>, <Op1>, <Op2>  @ Unsigned multiplication using 2 32-bit registers
+
+smlal            @ are the signed and unsigned equivalents of MLA. Op1 and Op2 are multiplied together and the result is added to any value already in destLo and destHi
+umala
+
+smlaxy           @ permits multiplication with accumulates using 16bit operands with a 32-bit accumulator.
+SMLA<x><y>(<suffix>)<dest>, <Op1>, <Op2>, <Op3> 
+                 @ Here <x> and <y> can be either B or T which stand for Bootom and Top, referring to the bottom or top two bytes of Operand1 and Operand2 respectivly. Operand3 contains the value to be added to the result of the multiplicatoin of the bytes identified in Operand1 and Operand2.
+                 @ Example:
+                 @    SMLABTCC R0, R1, R2, R3
+                 @ If the Carry is clear (CC) then the low half-word of R1 will be multiplied with the top half-word of R2. The result will be added to the value in R3 and the result stored in R0.
+
+SMLAWy           @ Here the bottom half-word of R6 is multiplied with the full word in R5 and the value in R7 is added to the result, which is dropped into R0.
+
+SMUAD<X>(<suffic>) <dest>, <Op1>, <Op2>
+SMUSD<X>(<suffic>) <dest>, <Op1>, <Op2>           
+                 @ work on 16-bit values and offer Signed Multiply with Addition and Singed Multiply with Subtraction, allowing optional exchange of operand halves. 
+                 @ If 'X' is included in the instruction then the most and least significant half-words of Operand2 are exchanged. If 'X' is ommitted then no exchange takes place. The instruction then multiplies the contents of the two lower half-words of Op1 and Op2 and aves the result, and then multiplies the contents of the two upper half-words of the operands and saves the results.
+                 @ SMUAD (Dual Signed 16-bit Multiply and Addition) the two paritial products are then added and the result placed in the destination register.
+                 @ SMUAS (Dual Signed 16-bit Multiply with Subtraction) the second partial product (the upper half-word) is subtracted from the first partial product.
+                 @ Example
+                 @    SMUADXEQ R5, R6, R7
+                 @    SMUDS R5, R7, R9
+
 
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -240,5 +264,28 @@ mov r2, #256
 add r2, r2, #1
 add r0, r1, r2   @add 257 to r1 put it in r0
 
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Multiplication by Constants    │
+@└────────────────────────────────┘
+            n= 1,2,3,4
+To multiply by 2,4,8,16.. 2^n; 
+mov r0, r0, lsl #n
+            n= 1,2,3,4
+To multiply by 3,5,9,17 ... (2^n)+1; 
+add r0, r0, r0, lsl #n
+            n= 1,2,3,4
+To multiply by 1,3,7,15... (2^n)-1
+rsb r0, r0, r0, lsl #n
 
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ ADR Directive                  │
+@└────────────────────────────────┘
+adr <register>, <label>    @
+    ADR is a directive not an ARM instruction. It is part of the assembler. Does address calculation for you
+    1. Notes the address of where the instruction is being assembled
+    2. Notes the address of the specified label
+    3. Calculates the offset between the two memory positions.
+    Can only access references in the .text (executable) section of your code.
+
+.word directive. Allows you to store a word (4 bytes) into memory.
 

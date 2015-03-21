@@ -1,4 +1,4 @@
-FILE=div2
+FILE=adr
 
 all: $(FILE)
 
