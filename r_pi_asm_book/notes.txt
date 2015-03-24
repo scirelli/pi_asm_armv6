@@ -101,7 +101,11 @@
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ARM Instructions                │
 @└────────────────────────────────┘
-ldr r1,[r5,#1]   @ load register. load contents at location in r5 +1 byte
+ldr r1, [r5,#1]   @ load register. load contents at location in r5 +1 byte
+ldr r1, [r5, #-1]
+ldr r1, [r5, -r1]
+ldr r1, [r5, r2, lsr #2] @ r2 is shifted by 4 and added to the address in r5
+                         @ memory is addressed in bytes. A word is 4 bytes, and register holds one word. So if you want to move to the next word in memory you have to shift your address by #2. Or this moves  you 4 bytes. Each shift is 2 bytes. In this case 2 bytes * 2 shifts = 4 bytes or one word. this  moves you on a word boundry
 ldr r1,[r5]      @ load contents at location in r5
 str r1,[r6]      @ store to memory. Store content r1 in location r6. 
 @[rX] is called an addressing mode. ARM instructions have several addressing modes.
@@ -280,7 +284,7 @@ rsb r0, r0, r0, lsl #n
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ ADR Directive                  │
 @└────────────────────────────────┘
-adr <register>, <label>    @
+adr <register>, <label>    
     ADR is a directive not an ARM instruction. It is part of the assembler. Does address calculation for you
     1. Notes the address of where the instruction is being assembled
     2. Notes the address of the specified label
@@ -288,4 +292,26 @@ adr <register>, <label>    @
     Can only access references in the .text (executable) section of your code.
 
 .word directive. Allows you to store a word (4 bytes) into memory.
+LDR r0, =string
+       can access memory across the board. Not restricted to .text sections
 
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Address Write Back             │
+@└────────────────────────────────┘
+! used for write back
+LDR r0, [r1,r2]!    @ with the ! the calcualted address r1+r2 is stored back into r1.
+                    @ this could be used for looping through an array a word at a time by LDR r0, [r1,#4]
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Post-Indexed Addressing        │
+@└────────────────────────────────┘
+Post-indexed addressing uses the write back feature by default. 
+LDR (<suffix>) <destination>, [<Op1>], <Opt2>
+Examples:
+    LDR r0,[r1],r2
+    STR r3, [r4], #4
+    LDRB r6,[r1],r5,LSL #1
+When post-indexed addressing is used, the contents of the base regiter alone are taken as the source or destination address. Only after the memory has been extracted or deposited are the contents of the offset field (Opt2) added to the base registrer and the value written to the base register.
+This means say for 
+LDR r0, [r1], #8
+That the value at location r1 is first loaded into r0 and then 8 is added to r1 and the sum is stored in r1.
