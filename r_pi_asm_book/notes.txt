@@ -315,3 +315,31 @@ When post-indexed addressing is used, the contents of the base regiter alone are
 This means say for 
 LDR r0, [r1], #8
 That the value at location r1 is first loaded into r0 and then 8 is added to r1 and the sum is stored in r1.
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Blocl Transfer                 │
+@└────────────────────────────────┘
+Transfer or load more than one register at a time.
+LDM <Options>(<Suffix>) <Op1>(!), {<Comma separted list of registers, or a range of registers separated by a ->}
+STM <Options>(<Suffix>) <Op1>(!), {<Comma separted list of registers, or a range of registers separated by a ->}
+    Registers can be listed in any order and a range of registers can be speciified with the use of a hyphen r5-r9
+    Operand1 is a register which contains the address marking the start of memory to be used in the operation. This address is not changed unless the write back operator ! is used in the instruction
+    Example:
+        STM r0, {r1, r5-r8}
+You can control the direction of the storage and wether the pointer is increased before or after the transfer.
+
+@┌────────────────────────────┐
+@│ Suffix │ Meaning           │
+@├────────────────────────────┤
+@│ IA     │ Increment After   │  Increment: Address + 4b * n; where n is the position
+@│ IB     │ Increment Before  │
+@│ DA     │ Decrement After   │  Decrement: Address - 4b * n;
+@│ DB     │ Decrement Before  │
+@└────────────────────────────┘
+
+Before or after means, stay for STMIA, store the value first then increment the pointer. STMIB means, first increment the pointer then store the data.
+Unless Write Back is asked for, the address in the specified register Op1 remains unaltered. The address calculated after the last register in the list has been processed.
+
+One good use of STMIA is saving and restoring register state.
+STMIA r0, {r1-r14}
+LDM   r0, {r1-r14}
