@@ -317,7 +317,7 @@ LDR r0, [r1], #8
 That the value at location r1 is first loaded into r0 and then 8 is added to r1 and the sum is stored in r1.
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ Blocl Transfer                 │
+@│ Block Transfer                 │
 @└────────────────────────────────┘
 Transfer or load more than one register at a time.
 LDM <Options>(<Suffix>) <Op1>(!), {<Comma separted list of registers, or a range of registers separated by a ->}
@@ -343,3 +343,8 @@ Unless Write Back is asked for, the address in the specified register Op1 remain
 One good use of STMIA is saving and restoring register state.
 STMIA r0, {r1-r14}
 LDM   r0, {r1-r14}
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Stacks                         │
+@└────────────────────────────────┘
+By default the ARM implements a full descending stack if a format is not specified.
