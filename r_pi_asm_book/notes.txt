@@ -328,14 +328,14 @@ STM <Options>(<Suffix>) <Op1>(!), {<Comma separted list of registers, or a range
         STM r0, {r1, r5-r8}
 You can control the direction of the storage and wether the pointer is increased before or after the transfer.
 
-@┌────────────────────────────┐
-@│ Suffix │ Meaning           │
-@├────────────────────────────┤
-@│ IA     │ Increment After   │  Increment: Address + 4b * n; where n is the position
-@│ IB     │ Increment Before  │
-@│ DA     │ Decrement After   │  Decrement: Address - 4b * n;
-@│ DB     │ Decrement Before  │
-@└────────────────────────────┘
+    @┌────────────────────────────┐
+    @│ Suffix │ Meaning           │
+    @├────────────────────────────┤
+    @│ IA     │ Increment After   │  Increment: Address + 4b * n; where n is the position
+    @│ IB     │ Increment Before  │
+    @│ DA     │ Decrement After   │  Decrement: Address - 4b * n;
+    @│ DB     │ Decrement Before  │
+    @└────────────────────────────┘
 
 Before or after means, stay for STMIA, store the value first then increment the pointer. STMIB means, first increment the pointer then store the data.
 Unless Write Back is asked for, the address in the specified register Op1 remains unaltered. The address calculated after the last register in the list has been processed.
@@ -348,3 +348,49 @@ LDM   r0, {r1-r14}
 @│ Stacks                         │
 @└────────────────────────────────┘
 By default the ARM implements a full descending stack if a format is not specified.
+Stacks can use the above table of IA, IB etc. but ARM also gives you postfixes for stacks
+
+    @┌──────────────────────────────────┐
+    @│ Postfix │ Meaning                │
+    @├──────────────────────────────────┤
+    @│ FA      │ Full Ascending stack   │
+    @│ FD      │ Full Decending stack   │
+    @│ EA      │ Empty Ascending Stack  │
+    @│ ED      │ Empty Descending Stack │
+    @└──────────────────────────────────┘
+
+Full Ascending stack: means the stack gross with increasing address, and the stack pointer points to a cell with a value in it. Points to the last occupied address on the stack
+Full Decending stack: means the stack gross with decreasing addresses, and the stack pointer points to a cell with a value in it. Indecates the next avaiable space
+Empty Ascending stack: means the stack grows with increasing address, and the stack pointer points to a cell with no value in it.
+Empty Descending stack: means teh stack grows with decreasing addresses, an the stack pointer points to a cell with no value ini it.
+    @┌────────────────────────────────────────────┐
+    @│ Instruction Pair │ Stack Type              │
+    @├────────────────────────────────────────────┤
+    @│ STMFD / LDMFD    │ Full Descending stack   │
+    @│ STMFA / LDMFA    │ Full Ascending Stack    │
+    @│ STMED / LDMED    │ Empty Descending Stack  │
+    @│ STMEA / LDMEA    │ Empty Ascending Stack   │
+    @└────────────────────────────────────────────┘
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Directives                     │
+@└────────────────────────────────┘
+.ascii ""
+.asciz ""
+
+.word 0xFFFFFFFF, 0xFF  @Store four-btye values, separated by commas into memory.
+
+.byte 1,2,3,4  @comma separated list of numbers in the range of 0 to 255. Store byte sized values, separated by commas into memory.
+
+.equ variableName, <value>  @kind of like defining variables. Assign immediate value to named label. Example: .equ one, 1
+
+.align <number>  @ If you store data in the .text section of your program, then it must start on a word boundary. If you insert text or data that does not completely fill the space to a four-byte boundary then the assembler will issue an error message. "Unalgined opcodes detected in executable segment". Use align to pad the program.
+
+You can use labels to mark the beginning and end of an array of bytes
+    Example:
+        values:
+            .byte 1,2,3,4,5,6,7,8,9
+        endvalues:
+Then just load the address of values into a register and endvalues into another, increment the first address until it equals the second.
+
+

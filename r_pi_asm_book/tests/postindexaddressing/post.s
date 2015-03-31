@@ -32,4 +32,3 @@ _exit:
 string1: .asciz "ABCDEFGHIJKL"
 string2: .asciz "012345678910"
 padding: .ascii "            "
-    

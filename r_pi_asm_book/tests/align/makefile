@@ -1,4 +1,4 @@
-FILE=stack2
+FILE=align
 
 all: $(FILE)
 
