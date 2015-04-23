@@ -152,7 +152,34 @@ SMUSD<X>(<suffic>) <dest>, <Op1>, <Op2>
                  @    SMUADXEQ R5, R6, R7
                  @    SMUDS R5, R7, R9
 
+VLDR             @ For loading floats
+                 @ Examples:
+                 @    VLDR d2, [r5,#4] @ Laod d2 with a F64 value
+                 @    VLDR s1, [r5]    @ Load s1 with F32 value
+VSTR
+VCMP             @ Vector compare
+                 @ There is two version .F32 and .F64
+                 @ Example: 
+                 @   VCMP .F32 s0, s1  @s0 - s1, set flags
+VMRS APSR_nzcv, FPSCR @ Moves the Floating point Status and Control Register (FPSCR) into the Application Status Reigster (APSR - CPSR)
+                      @  FPSCR can alse be transfered to an ARM register.
+                      @    VMRS r4, FPSCR
+                      @ The FPSCR can be loaded with the contents of an ARM register allowing bits to be pre-determined and set:
+                      @     VMSR FPSCR, r4  @ Copy r4 into FPSCR
+MRS              @ transfers the contents of either CPSR or SPSR into a register.
+                 @  Syntax:
+                 @      MRS (<suffix>) <Op1>, <CSPR|SPSR>
+MSR              @ transfer the contents of a register into either the CSPR or SPSR
+                 @  Syntax:
+                 @      MSR <CSPR|SPSR|Flags>, <Op1>
 
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Vector Floating Point          │
+@└────────────────────────────────┘
+VLDR             @ Vector load register
+VCVT             @ Vector convert. Convert from single to double percision or vis versa
+    VCVT.F64.F32 @ Convert to F64 from F32. Source and destination registers should match the converting sizes given
+VMOCV            @ Vector move
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ Shifts and Rotates             │
@@ -300,7 +327,7 @@ LDR r0, =string
 @└────────────────────────────────┘
 ! used for write back
 LDR r0, [r1,r2]!    @ with the ! the calcualted address r1+r2 is stored back into r1.
-                    @ this could be used for looping through an array a word at a time by LDR r0, [r1,#4]
+                    @ this could be used for looping through an array a word at a time by LDR r0, [r1,#4]!
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ Post-Indexed Addressing        │
@@ -310,7 +337,7 @@ LDR (<suffix>) <destination>, [<Op1>], <Opt2>
 Examples:
     LDR r0,[r1],r2
     STR r3, [r4], #4
-    LDRB r6,[r1],r5,LSL #1
+    LDRB r6,[r1],r5,LSL #1   @ load a byte
 When post-indexed addressing is used, the contents of the base regiter alone are taken as the source or destination address. Only after the memory has been extracted or deposited are the contents of the offset field (Opt2) added to the base registrer and the value written to the base register.
 This means say for 
 LDR r0, [r1], #8
@@ -342,7 +369,7 @@ Unless Write Back is asked for, the address in the specified register Op1 remain
 
 One good use of STMIA is saving and restoring register state.
 STMIA r0, {r1-r14}
-LDM   r0, {r1-r14}
+LDMDA r0, {r1-r14}
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ Stacks                         │
@@ -382,7 +409,7 @@ Empty Descending stack: means teh stack grows with decreasing addresses, an the 
 
 .byte 1,2,3,4  @comma separated list of numbers in the range of 0 to 255. Store byte sized values, separated by commas into memory.
 
-.equ variableName, <value>  @kind of like defining variables. Assign immediate value to named label. Example: .equ one, 1
+.equ variableName, <value>  @kind of like defining variables. Assign immediate value to named label. Example: .equ one, 1   or one equ 1
 
 .align <number>  @ If you store data in the .text section of your program, then it must start on a word boundary. If you insert text or data that does not completely fill the space to a four-byte boundary then the assembler will issue an error message. "Unalgined opcodes detected in executable segment". Use align to pad the program.
 
@@ -393,4 +420,127 @@ You can use labels to mark the beginning and end of an array of bytes
         endvalues:
 Then just load the address of values into a register and endvalues into another, increment the first address until it equals the second.
 
+.float
+
+PUSH
+POP
+VPUSH
+VPOP    @Vector pop for double percision numbers
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Creating Functions             │
+@└────────────────────────────────┘
+
+    @┌────────────────────────────────────────────────────┐
+    @│ Register │      Role                │  Contents    │ 
+    @│          │                          │  Preservered │
+    @├────────────────────────────────────────────────────┤
+    @│    r0    │  Argument and Result     │   No         │
+    @│    r1    │        Argument          │   No         │
+    @│    r2    │        Argument          │   No         │
+    @│    r3    │        Argument          │   No         │
+    @│    r4    │        General           │   Yes        │
+    @│    r5    │        General           │   Yes        │
+    @│    r6    │        General           │   Yes        │
+    @│    r7    │        General           │   Yes        │
+    @│    r8    │        General           │   Yes        │
+    @│    r9    │        General           │   Yes        │
+    @│    r10   │        General           │   Yes        │
+    @│    r11   │        General           │   Yes        │
+    @│    r12   │        General           │   Yes        │
+    @│    LR    │     Return Address       │   No         │
+    @│    SP    │     Stack Pointer        │   Yes        │
+    @└────────────────────────────────────────────────────┘
+
+Chart above details the purpose of each register when a function is called. In summary a function should adhere to the following:
+    It may freely modify registers r0, r1, r2, r3 and expect to find the information in them that it requires to carry out it's task.
+    It can modify registers r4-12, providing it restores their calues before returning to the calling routine.
+    It can modify the Stack Pointer providing it restores the value held on entry.
+    It must presever the address in the Link Register so that it may return correctly to the calling program. 
+    It should make no assumptions as to the contents of the CPSR. As far as the function is concerned the status of the N, Z, C and V falgs are unknown.
+
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Vector Floating Point (VFP)    │
+@└────────────────────────────────┘
+Single percision floating point registers are s0-s31. They are one word wide. 
+Double percision floating point registers are d0-d15. They are two words wide.
+The registers are one and the same. So s0 and s1 can be used individually or combined as d0 for double percision.
+Scalar banks s0-s7/d0-d3
+Vectorial banks s8-s31/d4-d15
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ VFP Control Register           │
+@└────────────────────────────────┘
+FPSCR Floating point & Status Control Register
+    @┌──────────────────────────────────────────────────────────────────────┐
+    @│ FPSCR Format       │ Rd  │  │   │ │ Vector │  │ Exception │  │ CEB   │
+    @├──────────────────────────────────────────────────────────────────────┤
+    @│31│30│29│28       24│23│22│21│20 │ │18│17│16│  │ 12       7│  │4    0 │
+    @├──────────────────────────────────────────────────────────────────────┤
+    @│N │Z │C │V │ │ │ │  │Rmode│Stride│ │ Len    │  │ │ │ │ │ │ │  │ │ │ │ │
+    @└──────────────────────────────────────────────────────────────────────┘
+Register Function Summary
+    @┌─────────────────────────────────────────────────────────────────────────────────┐
+    @│ Bit   │ Flag Set              │  Detail                                         │ 
+    @├─────────────────────────────────────────────────────────────────────────────────┤
+    @│ 31-28 │  Condition Flags      │   Negative, Zero, Carry, Overflow               │
+    @│ 23-22 │  Rounding Mode        │   Controls how values are rounded               │
+    @│ 21-20 │  Stride               │   Controls the sttep size taken in vector banks │
+    @│ 18-16 │  Len                  │   Controls the Vector length                    │
+    @│ 12-8  │  Exception Status     │   Enables trapping of exception types.          │
+    @│ 4-0   │  Cumulative Exception │   Trap cumulative exceptions                    │
+    @└─────────────────────────────────────────────────────────────────────────────────┘
+APSR (Application Program Status Register - CPSR)
+
+Condition code comparisoin ARM vs VFP
+
+    @┌──────────────────────────────────────────────────────────────┐
+    @│ Mnemonic │ Meaning after ARM inst.  │Detail                  │ 
+    @├──────────────────────────────────────────────────────────────┤
+    @│ EQ      │ Equal                     │ Equal                  │
+    @│ NE      │ Not equal                 │ No equal, or unordered │
+    @│ CS      │ Carry set                 │ >=, or unordered       │
+    @│ HS      │ Unsigned higher or same   │ >=, or unordered       │
+    @│ CC      │ Carry clear               │ <                      │
+    @│ LO      │ Unsigned lower            │ <                      │
+    @│ MI      │ Negative                  │ <                      │
+    @│ PL      │ Positive or zero          │ >=, or unordered       │
+    @│ VS      │ Overflow                  │ Unordered              │
+    @│ VC      │ No overflow               │ Not unordered          │
+    @│ HI      │ Unsigned Higher           │ > or unordered         │
+    @│ LS      │ Unsigned Lower or same    │ < or equal             │
+    @│ GE      │ Signed >=                 │ >=                     │
+    @│ LT      │ Signed <                  │ < or unordered         │
+    @│ GT      │ Signed >                  │ >                      │
+    @│ LE      │ Signed <=                 │ <= or unordered        │
+    @│ AL      │ Always                    │ Always                 │
+    @└──────────────────────────────────────────────────────────────┘
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Exception Handling             │
+@└────────────────────────────────┘
+    @┌──────────────────────────────────────────────────────────────────────────────────┐
+    @│ Mode                │ Description                                                │ 
+    @├──────────────────────────────────────────────────────────────────────────────────┤
+    @│ FIQ                 │ Entered when a high priority (fast) interrupt is raised    │
+    @│ IRQ                 │ Entered when a low priority (normal) interrupt is raised   │
+    @│ Supervisor and Rest │ Entered on reset and when a Software Interrupt is executed │
+    @│ Abort               │ Used to handle memort access violations                    │
+    @│ Undef               │ Used to handle undefined insstructions                     │
+    @│ User                │ Unprivileged mode under which most task run                │
+    @└──────────────────────────────────────────────────────────────────────────────────┘
+
+    @ Bit settings for Mode changes in CPSR
+    @┌────────────────────────────────────────────┐
+    @│              I   F   T        Mode         │ 
+    @│              7   6   5   4   3   2   1   0 │
+    @├────────────────────────────────────────────┤
+    @│ Abort      │ 1 │ 1 │ 0 │ 1 │ 0 │ 1 │ 1 │ 1 │
+    @│ FIQ        │ 1 │ 1 │ 0 │ 1 │ 0 │ 0 │ 0 │ 1 │
+    @│ IRQ        │ 1 │ uc│ 0 │ 1 │ 0 │ 0 │ 1 │ 0 │
+    @│ Supervisor │ 1 │ uc│ 0 │ 1 │ 0 │ 0 │ 1 │ 1 │
+    @│ System     │ 1 │ 1 │ 0 │ 1 │ 1 │ 1 │ 1 │ 1 │
+    @│ Undefined  │ 1 │ uc│ 0 │ 1 │ 1 │ 0 │ 1 │ 1 │
+    @│ User       │ 0 │ 0 │ 0 │ 1 │ 0 │ 0 │ 0 │ 0 │
+    @└────────────────────────────────────────────┘
 
