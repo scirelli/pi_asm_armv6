@@ -84,11 +84,11 @@
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│Status Register Configuration   │
 @└────────────────────────────────┘
- ┌──────────────────────────────────┐
-@│31│30│29│28│27...8│7│6│5│4│3│2│1│0│
-@├──────────────────────────────────┤
-@│N │Z │C │V │      │I│F│T│ Mode    │
-@└──────────────────────────────────┘
+ ┌─────────────────────────────────────┐
+@│31│30│29│28│27..24..8│7│6│5│4│3│2│1│0│
+@├─────────────────────────────────────┤
+@│N │Z │C │V │   │ J │ │I│F│T│ Mode    │
+@└─────────────────────────────────────┘
 @ N = Negative flag
 @ Z = Zero flag
 @ C = Carry flag
@@ -96,6 +96,7 @@
 @ I = Interupt disable bits
 @ F = Interupt disable bits
 @ T = Processor states 
+@ J = Jazelle State. Allow running of a Java Virtual Machine
 @ Mode = processor mode. Usually user mode
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -519,6 +520,9 @@ Condition code comparisoin ARM vs VFP
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ Exception Handling             │
 @└────────────────────────────────┘
+IRQ: Interrupt Rquest Mode. is deemed to be lower priority where a slight delay will not create any problems.
+FIQ: Fast Interrupt Mode. THese are interrupts deemed to be ones that have highest priority and are the ones that must be serviced first.
+
     @┌──────────────────────────────────────────────────────────────────────────────────┐
     @│ Mode                │ Description                                                │ 
     @├──────────────────────────────────────────────────────────────────────────────────┤
@@ -544,3 +548,55 @@ Condition code comparisoin ARM vs VFP
     @│ User       │ 0 │ 0 │ 0 │ 1 │ 0 │ 0 │ 0 │ 0 │
     @└────────────────────────────────────────────┘
 
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Vectors                        │
+@└────────────────────────────────┘
+A Vector is a known location in memorty that is exactly one word, or 32-bits wide. (Not to be confused with vectors in VFP.)
+There are two types of vectors: hardware vectors and software vectors. Hardware vectors are hardwired to the ARM chip itself and they never change, and are located at the very beginning of memory.
+In Raspbain, the vector table can be located at a higher address in memory, here starting at 0x0FFFF0000.
+Hardware vectors control the ultimate flow of information and are a set of memory addresses that are 'known' to the ARM chip. The term 'known' here means that they are physically 'hard-wared' and are thus hardware vectors.
+Hardware vectos typically control the flow of abnormal events which the chip itself cannnot deal with. They are often referred to as exception vectors and they reside at the start of memory map from 0x00000000 to 0x0000001C. 
+    @ Hardware Vectors
+    @┌────────────────────────────────────────────────────┐
+    @│ Address    │ Hi Address │ Vector                   │ 
+    @├────────────────────────────────────────────────────┤
+    @│ 0x00000000 │ 0xFFFF0000 │ ARM reset                │
+    @│ 0x00000004 │ 0xFFFF0004 │ Undefiend Instruction    │
+    @│ 0x00000008 │ 0xFFFF0008 │ Software Interrupt (SWI) │
+    @│ 0x0000000C │ 0xFFFF000C │ Abort (pre-fetch)        │
+    @│ 0x00000010 │ 0xFFFF0010 │ Abort (pre-fetch)        │
+    @│ 0x00000014 │ 0xFFFF0014 │ Address exceptoin        │
+    @│ 0x00000018 │ 0xFFFF0018 │ IRQ                      │
+    @│ 0x0000001C │ 0xFFFF001C │ FIRQ ( or FIQ)           │
+    @└────────────────────────────────────────────────────┘
+
+One common reason for manipulating the hardware vectors is to change the machine's response to memory access faults. If some non-existent memory is accessed then one of the memory fault vectors, 0x0000000C to 0x00000014, is called.
+The normal effect of this is for the Operating System to report a fatal error and stop exceuting the current task. You could change this to just warn the user.
+
+When an exception interrupt occurs the processor stops what it is doing and jumps to the appropriate location in the vector table. Each location contains a branc instruction pointing to the start of a specific handling routine.
+These instructions normally take one of three forms as shown below
+
+    @┌─────────────────────────────────────────────────────────────┐
+    @│ Instruction           │ Description                         │ 
+    @├─────────────────────────────────────────────────────────────┤
+    @│ B <address>           │ Jump to an address gven as a        │
+    @│                       │ relative                            │
+    @│                       │ offset in to the PC.                │
+    @│ LDR pc, [pc, #offset] │ Load address from memory to         │
+    @│                       │ the PC. This address is a 32-bit    │
+    @│                       │ value stored close to the vector    │
+    @│                       │ table. This is slightly slower than │
+    @│                       │ the previous method due to extra    │
+    @│                       │ memory access. The bonus is that    │
+    @│                       │ you can branch to any address in    │ 
+    @│                       │ the memory map.                     │
+    @│ LDR pc, [pc, #-0xFF0] │ Load address of a specific          │
+    @│                       │ interrupt service routine from      │ 
+    @│                       │ 0xFFFFF030 to the PC.               │
+    @│ MOV pc, #value        │ Copies an immediate value into the  │
+    @│                       │ PC. This will normally be a single  │
+    @│                       │ byte value that is rotated right by │
+    @│                       │ an even number of bits. Thus        │
+    @│                       │ provides access to the full momory  │
+    @│                       │ map but with gaps.                  │
+    @└─────────────────────────────────────────────────────────────┘
