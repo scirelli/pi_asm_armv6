@@ -107,9 +107,10 @@ ldr r1, [r5, #-1]
 ldr r1, [r5, -r1]
 ldr r1, [r5, r2, lsr #2] @ r2 is shifted by 4 and added to the address in r5
                          @ memory is addressed in bytes. A word is 4 bytes, and register holds one word. So if you want to move to the next word in memory you have to shift your address by #2. Or this moves  you 4 bytes. Each shift is 2 bytes. In this case 2 bytes * 2 shifts = 4 bytes or one word. this  moves you on a word boundry
-ldr r1,[r5]      @ load contents at location in r5
+ldr r1,[r5]      @ load contents at location in r5 into r1
+
 str r1,[r6]      @ store to memory. Store content r1 in location r6. 
-@[rX] is called an addressing mode. ARM instructions have several addressing modes.
+                 @[rX] is called an addressing mode. ARM instructions have several addressing modes.
 pc               @ Program counter nmeomonic. = r15
 beq              @ Branch if EQual. Jump to some label if Z flag = 1
 bne              @ Branch if Not Equal. Jump to some label if Z flag = 0
@@ -121,6 +122,8 @@ cmp <op1>,<op2>  @ CoMPare. Performs a notational subtraction. op1 - op2. The ph
 cmn <op1>,<op2>  @ ComPare Negative.
                  @ cmp and cpn are the only instrctions that directly affect the condition of the Status Register. By default, the rest of the ARM instruction set does not update the Status Register.
 sub r0,r0,r1     @ subtract r1 from r0 store in r0
+rsb r0,r0,r1     @ Reverse subtract. r1 - r0
+rsc r0,r0,r1     @ Reverse subtract with carry
 
 @S Suffix. ARM provides a method of allowing an operation such as sub to update the Status Register. This is done by use the Set suffix. All we have to do is append 'S' to the end of the mnemonix we want to use to modify the flags.
 @      Example:
@@ -351,7 +354,10 @@ Transfer or load more than one register at a time.
 LDM <Options>(<Suffix>) <Op1>(!), {<Comma separted list of registers, or a range of registers separated by a ->}
 STM <Options>(<Suffix>) <Op1>(!), {<Comma separted list of registers, or a range of registers separated by a ->}
     Registers can be listed in any order and a range of registers can be speciified with the use of a hyphen r5-r9
-    Operand1 is a register which contains the address marking the start of memory to be used in the operation. This address is not changed unless the write back operator ! is used in the instruction
+    Operand1: 
+        is a register which contains the address marking the start of memory to be used in the operation. This address is not changed unless the write back operator ! is used in the instruction
+    reglist:
+        is a list of registers to be loaded or stored, enclosed in braces. It can conatin register ranges. It must be comma separated if it contains more than on register or register range.
     Example:
         STM r0, {r1, r5-r8}
 You can control the direction of the storage and wether the pointer is increased before or after the transfer.
