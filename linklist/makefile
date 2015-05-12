@@ -1,4 +1,4 @@
-FILE=linklist
+FILE=mystruct
 
 all: $(FILE)
 

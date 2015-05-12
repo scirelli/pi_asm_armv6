@@ -1,7 +1,7 @@
 .DATA
 node:
-    .WORD 0
-    .WORD 0
+    .WORD 0   @ data
+    .WORD 0   @ p_next
 p_head:
     .WORD 0
 .TEXT
@@ -20,12 +20,16 @@ main:
     STR r0, [r1,#4]
     
     MOV r0, #4                  @ size of block, 4 bytes
-    BL  malloc
+    BL  malloc                  @ create space for a new node
+
     LDR r1, =p_head
-    STR r0, [r1]
+    STR r0, [r1]                @ set head to the new node.
+    LDR r1, [r1]
     MOV r0, #5
     STR r0, [r1] 
     LDR r2, [r1]
+
 exit:
+    MOV r0, #0
     LDMFD sp!, {r4-r12,LR}      @ Restore the registers and link reg.
     MOV PC, LR
