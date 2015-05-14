@@ -83,7 +83,11 @@ print_loop:
     LDR r1, [r1,#4]
     CMP r1, #0
     BNE print_loop
+    BAL exit
 
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Print a number                                  │
+@└─────────────────────────────────────────────────┘  
 _print:
     LDR r0, =s_fmt
     STMFD sp!, {lr}
