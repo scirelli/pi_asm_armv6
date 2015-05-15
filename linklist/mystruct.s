@@ -13,6 +13,7 @@ cnt=10
 null=0
 s_fmt: .asciz "%d "
 s_EOL: .asciz "\n\r"
+s_emptyList: .asciz "List is empty."
 .TEXT
 .ALIGN 2
 .GLOBAL main
@@ -145,14 +146,26 @@ removeNode:
         BAL .Lreturn_removeNode    @ return
 
     .Lfound:                   @ Found it so remove the node from the list. At this point r0 is the found node. r4 is the previous node
-        CMP r4, #null          @ Check if prev node is null. If it is we are at the head node
-        MOVEQ r1, #null
-        STREQ r1, [r5]
-        BEQ .Lreturn_removeNode
-                             @ ELSE
-        LDR r1, [r0,#4]      @ Store next node address in r1
-        STR r1, [r4,#4]      @ Set the previous node's next to the node after the one we want to delete
-        STR r1, [r0,#4]      @ At this point r0 is the removed node. So zero it's next node 
+        LDR   r3, [r5]         @ get the head node
+        CMP   r0, r3           @ check if we're  trying to remove the head node.
+        BNE   .LnodeInMid      @ If we're not then do a normal remove
+
+        .LremoveHeadNode:      @ We are trying to remove the head node.
+            LDR   r4, [r0,#4]  @ Load next node into r4
+            CMP   r4, #null    @ Check if it's null
+            BNE   .LnewHead
+            MOV  r1, #null     @ next node was null so point the head to null   
+            STR  r1, [r5]      @ set the head pointer to point to null
+        BAL .Lreturn_removeNode
+        
+        .LnewHead:
+            STR r4, [r5]       @ point the head at the found nodes next node.
+        BAL .Lreturn_removeNode
+
+        .LnodeInMid:
+            LDR r1, [r0,#4]      @ Store next node address in r1
+            STR r1, [r4,#4]      @ Set the previous node's next to the node after the one we want to delete
+            STR r1, [r0,#4]      @ At this point r0 is the removed node. So zero it's next node 
 
     .Lreturn_removeNode:
 @ ─────────────────────────────────────────────────
@@ -187,14 +200,19 @@ LDMFD sp!, {pc}                @ Restore the registers and link reg.
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ printList()                                     │
 @│ desc: Loop through the list and print it.       │
-@│ param: pointer to the head node.                │
+@│ param(r0): pointer to the head node.            │
 @│ return: nothing                                 │
 @└─────────────────────────────────────────────────┘  
 .global printList
 printList:
     STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
-    MOV r1, r0                 @ prepare to call printf by putting the head node in r1
-    LDR r1, [r1]               @ get the first node
+
+    LDR r1, [r0]               @ get the first node
+    CMP r1, #null              @ check if the head is null or not
+    LDREQ r0, =s_emptyList
+    BLEQ printf
+    BEQ .LprintList_return
+
     .Lprint_loop:
         LDR r0, =s_fmt         @ keep the format string in r0
         STMFD sp!, {r1}
@@ -204,6 +222,8 @@ printList:
         LDR r1, [r1,#4]        @ load the address of the next node into r1
         CMP r1, #null          @ see if next node is null
     BNE .Lprint_loop
+
+    .LprintList_return:
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg.
 
