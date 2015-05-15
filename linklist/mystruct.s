@@ -108,6 +108,11 @@ main:
     LDR r0, =p_head            @ test removing a node
     MOV r1, #5
     BL removeNode
+    
+    BL printNode
+
+    LDR r0, =s_EOL
+    BL printf
 
     LDR r0, =p_head            @ get the head pointer.
     BL printList
@@ -224,6 +229,22 @@ printList:
     BNE .Lprint_loop
 
     .LprintList_return:
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {pc}                @ Restore the registers and link reg.
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ printNode()                                     │
+@│ prints a node.                                  │
+@│ param(r0): pointer to the node to print         │
+@│ return: nothing                                 │
+@└─────────────────────────────────────────────────┘  
+.global printNode
+printNode:
+    STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
+        LDR r1, [r0]
+        LDR r0, =s_fmt         @ keep the format string in r0
+        BL printf              @ print the value
+    .LprintNode_return:
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg.
 
