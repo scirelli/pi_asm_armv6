@@ -6,11 +6,12 @@
 node:
     .WORD 0   @ data
     .WORD 0   @ p_next
+nodeSz=8
 p_head: .WORD 0
 p_tail: .WORD 0
 cnt=10
 null=0
-s_fmt: .asciz "%d\n"
+s_fmt: .asciz "%d "
 .TEXT
 .ALIGN 2
 .GLOBAL main
@@ -35,7 +36,7 @@ main:
     @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
     @│ Then try and create one on the heap             │
     @└─────────────────────────────────────────────────┘  
-    MOV r0, #4                  @ size of block, 4 bytes
+    MOV r0, #nodeSz             @ size of block, 8 bytes
     BL  malloc                  @ create space for a new node. r0 will hold the pointer to the new block
 
     LDR r4, =p_head
@@ -46,7 +47,7 @@ main:
     @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
     @│ Then a second one and link them                 │
     @└─────────────────────────────────────────────────┘  
-    MOV r0, #4                  @ size of block, 4 bytes
+    MOV r0, #nodeSz             @ size of block, 8 bytes
     BL  malloc                  @ create space for a new node
     
     MOV r2, #6
@@ -61,8 +62,8 @@ main:
     STR r0, [r4]                @ Track the last node in p_tail 
     MOV r5, #cnt                @ loop counter
 
-    fill_loop:
-    MOV r0, #4                  @ size of block, 4 bytes
+    .Lfill_loop:
+    MOV r0, #nodeSz             @ size of block, 4 bytes
     BL  malloc                  @ create space for a new node
     STR r5, [r0]                @ store the loop index as the data
 
@@ -72,12 +73,74 @@ main:
     STR r0, [r4]                @ Update the tail pointer to point at the new node
 
     SUBS r5, r5, #1             @ Decrement the index by 1
-    BNE fill_loop               @ Continue looping if we're not at 0
+    BNE .Lfill_loop             @ Continue looping if we're not at 0
     
     LDR r0, =p_head            @ get the head pointer.
+    BL printList
+    
+    LDR r0, =p_head            @ get the head pointer.
+    MOV r1, #14                @ value to append
+    BL appendNode
+    LDR r0, =p_head            @ get the head pointer.
+    MOV r1, #15                @ value to append
+    BL appendNode
 
+    LDR r0, =p_head            @ get the head pointer.
     BL printList
 BAL exit                       @ return
+
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ deleteNode()                                    │
+@│ desc: Deletes the first node found with the     │
+@│   passed in value.                              │
+@│ param (r0): pointer to the head node.           │
+@│ param (r1): Word value to find and delete.      │
+@│ return: the address of the removed node.        │
+@└─────────────────────────────────────────────────┘  
+.global removeNode
+removeNode:
+    STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
+    LDR r0, [r0]               @ get the first node
+    .Lremove_loop:
+        LDR r2, [r0,#4]        @ load the address of the next node into r2
+        CMP r2, #null          @ see if next node is null
+        LDRNE r0, [r0,#4]      @ if it's not null move to the next node.
+    BNE .Lremove_loop          @ and continue looping
+    STMFD sp!, {r0,r1}         @ r0 has the address of the tail node.
+    MOV r0, #nodeSz            @ size of block, 4 bytes
+    BL  malloc                 @ create space for a new node. r0 holds the address of new node
+    LDMFD sp!, {r1,r2}         @ restore the tail and the value to r1 and r2
+    STR r2, [r0]               @ Store the node's value
+    STR r0, [r1,#4]            @ set tail's next node to the new node. r0 (the return value) will have the new node
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {pc}                @ Restore the registers and link reg. 
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ appendNode()                                    │
+@│ desc: Append a node to the list  starting from  │
+@│   the head of the list.                         │
+@│ param (r0): pointer to the head node.           │
+@│ param (r1): Word value to append.               │
+@│ return: the address of the new node.            │
+@└─────────────────────────────────────────────────┘  
+.global appendNode
+appendNode:
+    STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
+    LDR r0, [r0]               @ get the first node
+    .Lappend_loop:
+        LDR r2, [r0,#4]        @ load the address of the next node into r2
+        CMP r2, #null          @ see if next node is null
+        LDRNE r0, [r0,#4]      @ if it's not null move to the next node.
+    BNE .Lappend_loop          @ and continue looping
+    STMFD sp!, {r0,r1}         @ r0 has the address of the tail node.
+    MOV r0, #nodeSz            @ size of block, 4 bytes
+    BL  malloc                 @ create space for a new node. r0 holds the address of new node
+    LDMFD sp!, {r1,r2}         @ restore the tail and the value to r1 and r2
+    STR r2, [r0]               @ Store the node's value
+    STR r0, [r1,#4]            @ set tail's next node to the new node. r0 (the return value) will have the new node
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {pc}                @ Restore the registers and link reg. 
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ printList()                                     │
@@ -85,11 +148,12 @@ BAL exit                       @ return
 @│ param: pointer to the head node.                │
 @│ return: nothing                                 │
 @└─────────────────────────────────────────────────┘  
+.global printList
 printList:
     STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
     MOV r1, r0                 @ prepare to call printf by putting the head node in r1
     LDR r1, [r1]               @ get the first node
-    print_loop:
+    .Lprint_loop:
         LDR r0, =s_fmt         @ keep the format string in r0
         STMFD sp!, {r1}
         LDR r1, [r1]           @ get the value from the node
@@ -97,15 +161,13 @@ printList:
         LDMFD sp!, {r1}
         LDR r1, [r1,#4]        @ load the address of the next node into r1
         CMP r1, #null          @ see if next node is null
-    BNE print_loop
-    LDMFD sp!, {lr}            @ Restore the registers and link reg.
+    BNE .Lprint_loop
 @ ─────────────────────────────────────────────────
-MOV pc, lr                     @ return
+LDMFD sp!, {pc}                @ Restore the registers and link reg.
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ Exit                                            │
 @└─────────────────────────────────────────────────┘  
 exit:
     MOV r0, #0
-    LDMFD sp!, {r4-r12,LR}      @ Restore the registers and link reg.
-    MOV PC, LR
+    LDMFD sp!, {r4-r12,PC}      @ Restore the registers and link reg.
