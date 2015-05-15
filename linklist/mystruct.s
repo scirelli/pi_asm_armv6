@@ -12,6 +12,7 @@ p_tail: .WORD 0
 cnt=10
 null=0
 s_fmt: .asciz "%d "
+s_EOL: .asciz "\n\r"
 .TEXT
 .ALIGN 2
 .GLOBAL main
@@ -75,8 +76,10 @@ main:
     SUBS r5, r5, #1             @ Decrement the index by 1
     BNE .Lfill_loop             @ Continue looping if we're not at 0
     
-    LDR r0, =p_head            @ get the head pointer.
+    LDR r0, =p_head             @ get the head pointer.
     BL printList
+    LDR r0, =s_EOL              @ print a newline
+    BL printf
     
     LDR r0, =p_head            @ get the head pointer.
     MOV r1, #14                @ value to append
@@ -87,11 +90,34 @@ main:
 
     LDR r0, =p_head            @ get the head pointer.
     BL printList
+    
+    LDR r0, =s_EOL
+    BL printf
+
+    LDR r0, =p_head            @ test removing a node
+    MOV r1, #1
+    BL removeNode
+
+    LDR r0, =p_head            @ get the head pointer.
+    BL printList
+
+    LDR r0, =s_EOL
+    BL printf
+
+    LDR r0, =p_head            @ test removing a node
+    MOV r1, #5
+    BL removeNode
+
+    LDR r0, =p_head            @ get the head pointer.
+    BL printList
+
+    LDR r0, =s_EOL
+    BL printf
 BAL exit                       @ return
 
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ deleteNode()                                    │
+@│ removeNode()                                    │
 @│ desc: Deletes the first node found with the     │
 @│   passed in value.                              │
 @│ param (r0): pointer to the head node.           │
@@ -100,21 +126,37 @@ BAL exit                       @ return
 @└─────────────────────────────────────────────────┘  
 .global removeNode
 removeNode:
-    STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
+    STMFD sp!, {r5, lr}        @ Store registerst that need to be preserved including the link reg.
+    MOV r5, r0                 @ track the head node poniter
     LDR r0, [r0]               @ get the first node
+    MOV r4, #null              @ r4 will be the previous node.
     .Lremove_loop:
-        LDR r2, [r0,#4]        @ load the address of the next node into r2
-        CMP r2, #null          @ see if next node is null
+        LDR   r3, [r0]         @ get the data
+        CMP   r3, r1           @ compare it to the passed in value
+        BEQ   .Lfound          @ If we've found it handle the find.
+        LDR   r2, [r0,#4]      @ load the address of the next node into r2
+        CMP   r2, #null        @ see if next node is null
+        MOVNE r4, r0           @ if it's not null track the current node as the previous node.
         LDRNE r0, [r0,#4]      @ if it's not null move to the next node.
     BNE .Lremove_loop          @ and continue looping
-    STMFD sp!, {r0,r1}         @ r0 has the address of the tail node.
-    MOV r0, #nodeSz            @ size of block, 4 bytes
-    BL  malloc                 @ create space for a new node. r0 holds the address of new node
-    LDMFD sp!, {r1,r2}         @ restore the tail and the value to r1 and r2
-    STR r2, [r0]               @ Store the node's value
-    STR r0, [r1,#4]            @ set tail's next node to the new node. r0 (the return value) will have the new node
+
+    .LnotFound:
+        MOV r0, #null              @ Didn't find it set return value to null
+        BAL .Lreturn_removeNode    @ return
+
+    .Lfound:                   @ Found it so remove the node from the list. At this point r0 is the found node. r4 is the previous node
+        CMP r4, #null          @ Check if prev node is null. If it is we are at the head node
+        MOVEQ r1, #null
+        STREQ r1, [r5]
+        BEQ .Lreturn_removeNode
+                             @ ELSE
+        LDR r1, [r0,#4]      @ Store next node address in r1
+        STR r1, [r4,#4]      @ Set the previous node's next to the node after the one we want to delete
+        STR r1, [r0,#4]      @ At this point r0 is the removed node. So zero it's next node 
+
+    .Lreturn_removeNode:
 @ ─────────────────────────────────────────────────
-LDMFD sp!, {pc}                @ Restore the registers and link reg. 
+LDMFD sp!, {r5, pc}             @ Restore the registers and link reg. 
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ appendNode()                                    │
