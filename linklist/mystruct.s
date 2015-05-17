@@ -14,6 +14,7 @@ null=0
 s_fmt: .asciz "%d "
 s_EOL: .asciz "\n\r"
 s_emptyList: .asciz "List is empty."
+s_localNode: .asciz "Node stored locally: %d"
 .TEXT
 .ALIGN 2
 .GLOBAL main
@@ -193,12 +194,29 @@ appendNode:
         CMP r2, #null          @ see if next node is null
         LDRNE r0, [r0,#4]      @ if it's not null move to the next node.
     BNE .Lappend_loop          @ and continue looping
-    STMFD sp!, {r0,r1}         @ r0 has the address of the tail node.
+    STMFD sp!, {r0}            @ r0 has the address of the tail node.
+    MOV r0, r1                 @ r1 the value to store in the node
+    BL createNode
+    LDMFD sp!, {r1}            @ restore the tail and the value to r1 and r2
+    STR r0, [r1,#4]            @ set tail's next node to the new node. r0 (the return value) will have the new node
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {pc}                @ Restore the registers and link reg. 
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ createNode()                                    │
+@│ desc: creates a new node and zero's it's next   │
+@│   pointer. Sets it's data to param one.         │
+@│ param (r0): Data to store in the node.          │
+@│ return: The address of the new node.            │
+@└─────────────────────────────────────────────────┘  
+.global createNode
+createNode:
+    STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
+    STMFD sp!, {r0}            @ Store the data 
     MOV r0, #nodeSz            @ size of block, 4 bytes
     BL  malloc                 @ create space for a new node. r0 holds the address of new node
-    LDMFD sp!, {r1,r2}         @ restore the tail and the value to r1 and r2
-    STR r2, [r0]               @ Store the node's value
-    STR r0, [r1,#4]            @ set tail's next node to the new node. r0 (the return value) will have the new node
+    LDMFD sp!, {r1}            @ Restore the data to r1
+    STR r1, [r0]               @ put it in the node
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg. 
 
@@ -248,6 +266,22 @@ printNode:
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg.
 
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ printNodeUsing()                                │
+@│ prints a node using the string from param 2.    │
+@│ param(r0): pointer to the node to print         │
+@│ param(r1): pointer to the string to print.      │
+@│ return: nothing                                 │
+@└─────────────────────────────────────────────────┘  
+.global printNode
+printNode:
+    STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
+        LDR r1, [r0]
+        LDR r0, =s_fmt         @ keep the format string in r0
+        BL printf              @ print the value
+    .LprintNode_return:
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {pc}                @ Restore the registers and link reg.
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ Exit                                            │
 @└─────────────────────────────────────────────────┘  
