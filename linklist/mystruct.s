@@ -7,14 +7,20 @@ node:
     .WORD 0   @ data
     .WORD 0   @ p_next
 nodeSz=8
+dataSz=4
 p_head: .WORD 0
 p_tail: .WORD 0
 cnt=10
 null=0
+TRUE=1
+FALSE=0
 s_fmt: .asciz "%d "
+s_str: .asciz "%s"
 s_EOL: .asciz "\n\r"
 s_emptyList: .asciz "List is empty."
-s_localNode: .asciz "Node stored locally: %d"
+s_localNode: .asciz "Node stored locally: %d\n"
+s_cyclefound: .asciz "A cycle was found\n"
+s_nocyclefound: .asciz "No cycle was found\n"
 .TEXT
 .ALIGN 2
 .GLOBAL main
@@ -32,9 +38,13 @@ main:
     MOV r0, #1
     LDR r1, =node
     STR r0, [r1]
+    MOV r0, r1
+    LDR r1, =s_localNode
+    BL printNodeUsing
 
+    LDR r1, =node
     MOV r0, #2
-    STR r0, [r1,#4]
+    STR r0, [r1,#dataSz]
     
     @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
     @│ Then try and create one on the heap             │
@@ -56,7 +66,7 @@ main:
     MOV r2, #6
     STR r2, [r0]                @ store some data in the new node
     LDR r1, [r4]                @ get the node at p_head
-    STR r0, [r1, #4]            @ set p_head->p_next to the address of the new node
+    STR r0, [r1, #dataSz]       @ set p_head->p_next to the address of the new node
 
     @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
     @│ Now try to create a long chain in a loop        │
@@ -120,6 +130,29 @@ main:
 
     LDR r0, =s_EOL
     BL printf
+
+
+    LDR r0, =p_head            @ get the head pointer.
+    MOV r1, #20                @ value to prepend
+    BL prependNode
+
+    LDR r0, =p_head            @ get the head pointer.
+    BL printList
+
+    LDR r0, =s_EOL
+    BL printf
+    
+    @ TODO: find the tail and point it at the head
+    @LDR r1, =p_head
+    @STR r1, [r0,#dataSz]       @ r0 is the new node. Point the tail to the head
+
+    LDR r0, =p_head
+    BL cyclical
+    CMP r0, #TRUE
+    LDR   r0, =s_str
+    LDREQ r1, =s_cyclefound
+    LDRNE r1, =s_nocyclefound
+    BL printf
 BAL exit                       @ return
 
 
@@ -177,6 +210,27 @@ removeNode:
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {r5, pc}             @ Restore the registers and link reg. 
 
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ prependNode()                                   │
+@│ desc: Prepend a node to the list                │
+@│ param (r0): pointer to the head node.           │
+@│ param (r1): Word value to append.               │
+@│ return: the address of the new node.            │
+@└─────────────────────────────────────────────────┘  
+.global prependNode
+prependNode:
+    STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
+    MOV r5, r0
+    MOV r6, r1
+    BL createNode
+    LDR r7, [r5]               @ get the first node
+    STR r7, [r0,#dataSz]
+    STR r0, [r5]
+    STR r6, [r0]
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {pc}                @ Restore the registers and link reg. 
+
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ appendNode()                                    │
 @│ desc: Append a node to the list  starting from  │
@@ -217,6 +271,49 @@ createNode:
     BL  malloc                 @ create space for a new node. r0 holds the address of new node
     LDMFD sp!, {r1}            @ Restore the data to r1
     STR r1, [r0]               @ put it in the node
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {pc}                @ Restore the registers and link reg. 
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ cyclical()                                      │
+@│ desc: Checks for cycles in the linked list.     │
+@│ param(r0): pointer to the head node.            │
+@│ return: 1 if cyclical 0 if not.                 │
+@└─────────────────────────────────────────────────┘  
+.global cyclical
+cyclical:
+    STMFD sp!, {lr}                @ Store registerst that need to be preserved including the link reg.
+
+    LDR r0, [r0]                   @ get the first node. Slow pointer
+    CMP r0, #null
+    BEQ .Lnocycle
+
+    LDR r1, [r0,#dataSz]           @ get the next node. Fast pointer. fast = slow->next
+
+    .Lcyclical_loop:
+        CMP r1, #null              @ Make sure the fast node is not null
+        BEQ .Lnocycle
+
+        LDR r2, [r1,#dataSz]       @ Check fast's next pointer
+        CMP r2, #null
+        BEQ .Lnocycle
+
+        CMP r1, r0                 @ Check if fast == slow
+        BEQ .Lcycle
+
+        CMP r2, r0                 @ Check if fast->next == slow
+        BEQ .Lcycle
+        
+        LDR r0, [r0, #dataSz]      @ slow = slow->next
+        LDR r1, [r2, #dataSz]      @ fast = fast->next->next
+    BAL .Lcyclical_loop
+
+    .Lnocycle:
+    MOV r0, #FALSE
+    BAL .Lcyclical_return
+    .Lcycle:
+    MOV r0, #TRUE
+    .Lcyclical_return:
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg. 
 
@@ -273,15 +370,17 @@ LDMFD sp!, {pc}                @ Restore the registers and link reg.
 @│ param(r1): pointer to the string to print.      │
 @│ return: nothing                                 │
 @└─────────────────────────────────────────────────┘  
-.global printNode
-printNode:
+.global printNodeUsing
+printNodeUsing:
     STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
-        LDR r1, [r0]
-        LDR r0, =s_fmt         @ keep the format string in r0
+        MOV r3, r0
+        MOV r0, r1
+        LDR r1, [r3]
         BL printf              @ print the value
-    .LprintNode_return:
+    .LprintNodeUsing_return:
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg.
+
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ Exit                                            │
 @└─────────────────────────────────────────────────┘  
