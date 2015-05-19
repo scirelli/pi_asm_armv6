@@ -21,6 +21,7 @@ s_emptyList: .asciz "List is empty."
 s_localNode: .asciz "Node stored locally: %d\n"
 s_cyclefound: .asciz "A cycle was found\n"
 s_nocyclefound: .asciz "No cycle was found\n"
+s_tailNodeIs: .asciz "The tail node is...: %d\n"
 .TEXT
 .ALIGN 2
 .GLOBAL main
@@ -138,13 +139,8 @@ main:
 
     LDR r0, =p_head            @ get the head pointer.
     BL printList
-
     LDR r0, =s_EOL
     BL printf
-    
-    @ TODO: find the tail and point it at the head
-    @LDR r1, =p_head
-    @STR r1, [r0,#dataSz]       @ r0 is the new node. Point the tail to the head
 
     LDR r0, =p_head
     BL cyclical
@@ -152,6 +148,30 @@ main:
     LDR   r0, =s_str
     LDREQ r1, =s_cyclefound
     LDRNE r1, =s_nocyclefound
+    BL printf
+    LDR r0, =s_EOL
+    BL printf
+
+    LDR r0, =p_head
+    BL getTailNode
+    MOV r5, r0                  @ put the tailnode in r5 temproarily
+    LDR r1, =s_tailNodeIs
+    BL printNodeUsing
+    LDR r0, =s_EOL
+    BL printf
+
+    LDR r0, =p_head
+    LDR r0, [r0]
+    STR r0, [r5,#dataSz]        @ Set the tails->next node to the head node.
+    LDR r0, =p_head
+    BL cyclical                 @ Test if cyclical works
+    CMP r0, #TRUE
+    LDR   r0, =s_str
+    LDREQ r1, =s_cyclefound
+    LDRNE r1, =s_nocyclefound
+    BL printf
+    
+    LDR r0, =s_EOL
     BL printf
 BAL exit                       @ return
 
@@ -314,6 +334,28 @@ cyclical:
     .Lcycle:
     MOV r0, #TRUE
     .Lcyclical_return:
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {pc}                @ Restore the registers and link reg. 
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ getTailNode()                                   │
+@│ desc: Returns the tail of a linked list.        │
+@│ param(r0): pointer to the head node.            │
+@│ return: The tail node.        .                 │
+@└─────────────────────────────────────────────────┘  
+.global getTailNode
+getTailNode:
+    STMFD sp!, {lr}                @ Store registerst that need to be preserved including the link reg.
+
+    LDR r0, [r0]                   @ get the first node. Slow pointer
+    .LgetTailNode_loop:
+        MOV r1, r0                 @ Store the address of the node in r1
+        LDR r0, [r0,#dataSz]
+        CMP r0, #null
+        BEQ .LgetTailNode_return
+    BAL .LgetTailNode_loop
+    .LgetTailNode_return:
+    MOV r0, r1
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg. 
 
