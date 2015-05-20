@@ -69,15 +69,15 @@
 @├───────────────────┤
 @│ R11│ Available    │
 @├───────────────────┤
-@│ R12│ Available    │
+@│ R12│ Available    │ ip
 @├───────────────────┤
-@│ R13│ stack pntr   │
+@│ R13│ stack pntr   │ sp
 @├───────────────────┤
-@│ R14│ Link registe │
+@│ R14│ Link registe │ lr
 @├───────────────────┤
-@│ R15│ Program Cntr │
+@│ R15│ Program Cntr │ pc
 @├───────────────────┤
-@│ Current program   │
+@│ Current program   │ cpsr
 @│ Status register   │
 @└───────────────────┘
 

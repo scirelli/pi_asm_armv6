@@ -25,7 +25,6 @@ s_tailNodeIs: .asciz "The tail node is...: %d\n"
 .TEXT
 .ALIGN 2
 .GLOBAL main
-.FUNC main
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ main()                                          │
