@@ -6,7 +6,8 @@
 .DATA
 arraySz=10
 array: .SKIP 40
-s_digit: .asciz "%d,"
+s_digit: .asciz "%d\n\r"
+s_digit_comma: .asciz "%d,"
 .TEXT
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -42,18 +43,24 @@ array_print:
     STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
 
     MOV r5, r0
+    SUBS r1, r1, #1
+    BMI .Larray_print_return
     MOV r6, r1
     MOV r7, #0
 
     .Larray_print_loop:
        CMP r7, r6
-       BHS .Larray_print_return
+       BHS .Larray_print_last_element
        ADD r7, r7, #1
        LDR r1, [r5], #+4
-       LDR r0, =s_digit
+       LDR r0, =s_digit_comma
        BL  printf
     BAL .Larray_print_loop
 
+    .Larray_print_last_element:
+       LDR r1, [r5]
+       LDR r0, =s_digit
+       BL  printf
     .Larray_print_return:
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg.
