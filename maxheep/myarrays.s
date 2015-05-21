@@ -14,6 +14,7 @@ s_digit_comma: .asciz "%d,"
 @│ main()                                          │
 @└─────────────────────────────────────────────────┘  
 .GLOBAL main
+.FUNC main
 main:
     STMFD sp!, {r4-r12,lr}
     
@@ -28,8 +29,9 @@ main:
     MOV r1, #arraySz
     BL array_print
 end:
-    LDMFD sp!, {r4-r12,pc}
-
+    LDMFD sp!, {r4-r12,lr}
+    BX lr
+.ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ array_print()                                   │
@@ -39,6 +41,7 @@ end:
 @│ return: nothing                                 │
 @└─────────────────────────────────────────────────┘  
 .GLOBAL array_print
+.FUNC array_print
 array_print:
     STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
 
@@ -64,3 +67,4 @@ array_print:
     .Larray_print_return:
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg.
+.ENDFUNC
