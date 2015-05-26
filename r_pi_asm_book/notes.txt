@@ -109,6 +109,8 @@ ldr r1, [r5, r2, lsr #2] @ r2 is shifted by 4 and added to the address in r5
                          @ memory is addressed in bytes. A word is 4 bytes, and register holds one word. So if you want to move to the next word in memory you have to shift your address by #2. Or this moves  you 4 bytes. Each shift is 2 bytes. In this case 2 bytes * 2 shifts = 4 bytes or one word. this  moves you on a word boundry
 ldr r1,[r5]      @ load contents at location in r5 into r1
 
+mvn r1, r2       @ Performs a bitwise logical NOT on operatnd 2 (r2) and places the result into op1 (r1)
+
 str r1,[r6]      @ store to memory. Store content r1 in location r6. 
                  @[rX] is called an addressing mode. ARM instructions have several addressing modes.
 pc               @ Program counter nmeomonic. = r15
