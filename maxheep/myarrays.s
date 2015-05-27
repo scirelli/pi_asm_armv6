@@ -4,8 +4,8 @@
 @└─────────────────────────────────────────────────────────────────────────────┘  
 @ array is 10 integeers, int is 4 bytes. 4*10
 .DATA
-arraySz=10
-array: .SKIP 40
+arraySz=1024
+array: .SKIP 4096 
 s_digit: .asciz "%d\n\r"
 s_digit_comma: .asciz "%d,"
 RAND_MAX=2147483647
@@ -60,7 +60,8 @@ LDMFD sp!, {pc}                @ Restore the registers and link reg.
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ array_fill_random()                             │
-@│ Fills an array with randome ints                │
+@│ Fills an array with random ints from 0 to the   │
+@│ size of the array.                              │
 @│ param(r0): pointer to the array to fill.        │
 @│ param(r1): The size of the array.               │
 @│ return: nothing                                 │
@@ -86,6 +87,12 @@ array_fill_random:
         FMSR s15, r1           @
         FUITOS s15, s15        @ Float, convert unsigned integer to float single-precision
         FDIVS  s15, s14, s15   @ Divide. 
+        
+        FMSR s14, r5           @ W're going to fill the array with random numbers between 0 and the size of the array.
+        FUITOS s14, s14
+        FMULS s15, s14, s15    @ Floating-point multiply. S for single precision. D for double.
+
+        FTOUIZS s15, s15       @ Convert from floating-point to unsigned integer, Z means round down to zero (floor). S for single-precision
         FMRS r0, s15
 
         STR r0, [r4], #+4
