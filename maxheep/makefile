@@ -1,9 +1,9 @@
-FILE=myarrays
+FILE=maxheap
 
 all: $(FILE)
 
 $(FILE): $(FILE).s
-	gcc -g -o $(FILE) $(FILE).s
+	gcc -g -o $(FILE) $(FILE).s myarrays.s
 
 c_source:
 	gcc -S -std=c99 -o $(FILE).s $(FILE).c

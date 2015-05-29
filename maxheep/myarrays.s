@@ -4,8 +4,8 @@
 @└─────────────────────────────────────────────────────────────────────────────┘  
 @ array is 10 integeers, int is 4 bytes. 4*10
 .DATA
-arraySz=1024
-array: .SKIP 4096 
+@arraySz=1024
+@array: .SKIP 4096 
 s_digit: .asciz "%d\n\r"
 s_digit_comma: .asciz "%d,"
 RAND_MAX=2147483647
@@ -14,27 +14,27 @@ RAND_MAX=2147483647
 .ALIGN 2
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ main()                                          │
+@│ main() REMOVED this file has become a lib file  │
 @│ param(r0): length of the argv array.            │
 @│ param(r1): array of char*.                      │
 @└─────────────────────────────────────────────────┘  
-.GLOBAL main
-.FUNC main
-main:
-    STMFD sp!, {r4-r12,lr}
-
-    LDR r0, =array
-    MOV r1, #arraySz
-    BL array_fill_random
-
-    LDR r0, =array
-    MOV r1, #arraySz
-    BL array_print
-end:
+@.GLOBAL main
+@.FUNC main
+@main:
+@    STMFD sp!, {r4-r12,lr}
+@
+@    LDR r0, =array
+@    MOV r1, #arraySz
+@    BL array_fill_random
+@
+@    LDR r0, =array
+@    MOV r1, #arraySz
+@    BL array_print
+@end:
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4-r12,lr}
-    BX lr
-.ENDFUNC
+@    LDMFD sp!, {r4-r12,lr}
+@    BX lr
+@.ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ array_fill()                                    │
