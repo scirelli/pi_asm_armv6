@@ -19,11 +19,12 @@ arrayTest:
     .word 5
     .word 44
     .word 55
+bignum: .word 9999
 s_digit:       .asciz "%d\n\r"
 s_nl:          .asciz "\n\r"
 s_simpleTest:  .asciz "Simple static array test:\n"
 s_simpleTest2: .asciz "Simple static random filled array test:\n"
-s_simpleTest3: .asciz "Simple dynamic random filled array test:\n"
+s_simpleTest3: .asciz "Simple dynamic random filled array test of size (%d):\n"
 .TEXT
 .ALIGN 2
 
@@ -50,6 +51,7 @@ main:
     BL printf
 
     LDR r0,=s_simpleTest3
+    MOV r1, #bigArraySz
     BL printf
     BL bigRandArrayTest
     LDR r0,=s_nl
@@ -124,16 +126,20 @@ bigRandArrayTest:
     STMFD sp!, {lr}
                             @ Create space for the array
     MOV r0, #bigArraySz 
+    MOV r1, #4
+    MUL r0, r0, r1
     BL malloc
     MOV r4, r0              @ Keep a reference to the array
     MOV r1, #bigArraySz     @ Fill the array
     BL array_fill_random
 
+    LDR r1, =bignum
+    LDR r1, [r1]
+    STR r1, [r4,#+20] 
+
     MOV r0, r4
     MOV r1, #bigArraySz
     BL array_print
-    LDR r0,=s_nl
-    BL printf
 
     MOV r0, r4
     MOV r1, #bigArraySz
