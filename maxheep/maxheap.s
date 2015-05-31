@@ -65,7 +65,19 @@ main:
     MOV r1, r0
     LDR r0, =s_digit
     BL printf
-end:
+
+    LDR r0, =array
+    MOV r1, #arraySz
+    BL array_fill
+    LDR r0, =array
+    MOV r1, #0
+    MOV r2, #8
+    MOV r3, #4
+    BL array_ofWrdSwap
+    LDR r0, =array
+    MOV r1, #arraySz
+    BL array_print
+.Lend:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
     BX lr
@@ -81,7 +93,7 @@ right:
     STMFD sp!, {lr}
     MOV r1, #2
     ADD r0, r1, r0, LSL #1            @ 2*i+2
-right_end:
+.Lright_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {pc}
 .ENDFUNC
@@ -96,7 +108,7 @@ left:
     STMFD sp!, {lr}
     MOV r1, #1
     ADD r0, r1, r0, LSL #1            @ 2*i+1
-left_end:
+.Lleft_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {pc}
 .ENDFUNC
@@ -111,12 +123,48 @@ parent:
     STMFD sp!, {lr}
 
     CMP r0, #0
-    BEQ parent_end
+    BEQ .Lparent_end
 
     SUB r0, r0, #1 
     LSR r0, #1                       @ (i-1)/2
-
-parent_end:
+.Lparent_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {pc}
+.ENDFUNC
+
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ maxHeapify()                                    │
+@│ param(r0): The array to heappify.               │
+@│ param(r1): Index of the tree to heapfiy.        │
+@│ param(r2): Length of the array.                 │
+@│ param(r3): Size of an element in the array.     │
+@│ return: index of the parent.                    │
+@└─────────────────────────────────────────────────┘  
+.FUNC maxHeapify
+maxHeapify:
+    STMFD sp!, {r4-r8,lr}
+
+    MOV r5, r0
+    MOV r0, r1
+    BL  left
+    MOV r6, r0              @ lft
+
+    MOV r0, r1
+    BL right
+    MOV r7, r0              @ rght
+
+    CMP r6, r2              @ lft >= a.length
+    BHS .LmaxHeapify_end
+    CMP r6, #0              @ lft < 0
+    BLO .LmaxHeapify_end
+    
+    CMP r7, r2              @ rght >= a.length
+    BHS .LmaxHeapify_end
+    CMP r7, 0               @ rght < 0
+    BLO .LmaxHeapify_end
+
+.LmaxHeapify_end:
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r8,pc}
 .ENDFUNC

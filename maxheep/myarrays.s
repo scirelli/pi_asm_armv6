@@ -138,3 +138,53 @@ array_print:
 @ ─────────────────────────────────────────────────
 LDMFD sp!, {pc}                @ Restore the registers and link reg.
 .ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ array_swap()                                    │
+@│ Swaps two elements of an array. Swaps a and b.  │
+@│ param(r0): pointer to the array.                │
+@│ param(r1): Index to element a.                  │
+@│ param(r2): Index to element b.                  │
+@│ param(r3): Size of an element.                  │
+@│ return: nothing                                 │
+@└─────────────────────────────────────────────────┘  
+.GLOBAL array_swap
+.FUNC array_swap
+array_swap:
+    STMFD sp!, {r4,r5,lr}      @ Store registerst that need to be preserved including the link reg.
+    
+    MUL r1, r1, r3
+    MUL r2, r2, r3
+    LDR r5, [r0,r1]            @ Temp for value a
+    LDR r4, [r0,r2]            @ Temp for value b
+    STR r4, [r0,r1]
+    STR r5, [r0,r2]
+
+.Larray_swap_return:
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {r4,r5,pc}          @ Restore the registers and link reg.
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ array_ofWrdSwap()                               │
+@│ Swaps two elements of an array. Swaps a and b.  │
+@│ Elements are treated as pointers size 4bytes.   │
+@│ param(r0): pointer to the array.                │
+@│ param(r1): Index to element a.                  │
+@│ param(r2): Index to element b.                  │
+@│ return: nothing                                 │
+@└─────────────────────────────────────────────────┘  
+.GLOBAL array_ofWrdSwap
+.FUNC array_ofWrdSwap
+array_ofWrdSwap:
+    STMFD sp!, {r4,lr}         @ Store registerst that need to be preserved including the link reg.
+    
+    LDR r3, [r0,r1, LSL #2]    @ Temp for value a
+    LDR r4, [r0,r2, LSL #2]    @ Temp for value b
+    STR r4, [r0,r1, LSL #2]
+    STR r3, [r0,r2, LSL #2]
+
+.Larray_ofWrdSwap_return:
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {r4,pc}             @ Restore the registers and link reg.
+.ENDFUNC
