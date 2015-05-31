@@ -22,22 +22,6 @@
 @│  The key of a node is <= the keys of it's children.                         │
 @│                                                                             │ 
 @└─────────────────────────────────────────────────────────────────────────────┘  
-@ array is 10 integeers, int is 4 bytes. 4*10
-.DATA
-arraySz=10
-array: .SKIP 40
-arrayTest:
-    .word 15
-    .word 3
-    .word 7
-    .word 1
-    .word 7
-    .word 0
-    .word 8
-    .word 5
-    .word 44
-    .word 55
-s_digit: .asciz "%d\n\r"
 .TEXT
 .ALIGN 2
 
@@ -46,28 +30,28 @@ s_digit: .asciz "%d\n\r"
 @│ param(r0): length of the argv array.            │
 @│ param(r1): array of char*.                      │
 @└─────────────────────────────────────────────────┘  
-.GLOBAL main
-.FUNC main
-main:
-    STMFD sp!, {r4-r12,lr}
-
-    LDR r0, =arrayTest
-    MOV r1, #arraySz
-    BL array_print
-
-    LDR r0, =arrayTest
-    MOV r1, #arraySz
-    MOV r2, #4
-    BL buildMaxHeap
-
-    LDR r0, =arrayTest
-    MOV r1, #arraySz
-    BL array_print
-.Lend:
+@.GLOBAL main
+@.FUNC main
+@main:
+@    STMFD sp!, {r4-r12,lr}
+@
+@    LDR r0, =arrayTest
+@    MOV r1, #arraySz
+@    BL array_print
+@
+@    LDR r0, =arrayTest
+@    MOV r1, #arraySz
+@    MOV r2, #4
+@    BL buildMaxHeap
+@
+@    LDR r0, =arrayTest
+@    MOV r1, #arraySz
+@    BL array_print
+@.Lend:
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4-r12,lr}
-    BX lr
-.ENDFUNC
+@    LDMFD sp!, {r4-r12,lr}
+@    BX lr
+@.ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ right()                                         │
@@ -135,20 +119,17 @@ maxHeapify:
     MOV r7, r2              @ r7 Length of array
     MOV r8, r3              @ r8 size of element
 
+.Ltest_left:
+                            @ Get the left child index
     MOV r0, r6
     BL  left
     MOV r9, r0              @ lft
-
-    MOV r0, r6
-    BL right
-    MOV r10, r0             @ rght
-
+                            @Check to make sure it's with in the array bounds
     CMP r9, r7              @ lft >= a.length
-    BHS .LmaxHeapify_end
+    BHS .Ltest_right
     CMP r9, #0              @ lft < 0
-    BLO .LmaxHeapify_end
-    
-.Ltest_left:
+    BLO .Ltest_right
+                            @ Compare the elements to see which is larger 
     MUL r0, r9, r8          @ lft*elementSz
     LDR r0, [r5,r0]         @ value in lft
     MUL r1, r6, r8          @ root_index*elementSz
@@ -168,12 +149,17 @@ maxHeapify:
         MOV r3, r8          @ elementSz
         BL maxHeapify
 
+.Ltest_right:
+                            @ Get the right child's index
+    MOV r0, r6
+    BL right
+    MOV r10, r0             @ rght
+                            @Check to make sure it's with in the array bounds
     CMP r10, r7             @ rght >= a.length
     BHS .LmaxHeapify_end
     CMP r10, #0              @ rght < 0
     BLO .LmaxHeapify_end
 
-.Ltest_right:
     MUL r0, r10, r8         @ rght*elementSz
     LDR r0, [r5,r0]         @ value in rght 
     MUL r1, r6, r8          @ root_index*elementSz
@@ -203,6 +189,7 @@ maxHeapify:
 @│ param(r2): Size of an element in the array.     │
 @│ return: nothing                                 │
 @└─────────────────────────────────────────────────┘  
+.GLOBAL buildMaxHeap
 .FUNC buildMaxHeap
 buildMaxHeap:
     STMFD sp!, {r4-r6,lr}
@@ -219,7 +206,7 @@ buildMaxHeap:
         MOV r3, r6
         BL maxHeapify
         SUBS r4, r4, #1
-    BNE .LbuildMaxHeap_loop
+    BPL .LbuildMaxHeap_loop
 .LbuildMaxHeap_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4-r6,pc}
