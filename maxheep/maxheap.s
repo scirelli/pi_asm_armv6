@@ -25,7 +25,18 @@
 @ array is 10 integeers, int is 4 bytes. 4*10
 .DATA
 arraySz=10
-array: .SKIP 40 
+array: .SKIP 40
+arrayTest:
+    .word 15
+    .word 3
+    .word 7
+    .word 1
+    .word 7
+    .word 0
+    .word 8
+    .word 5
+    .word 44
+    .word 55
 s_digit: .asciz "%d\n\r"
 .TEXT
 .ALIGN 2
@@ -40,41 +51,16 @@ s_digit: .asciz "%d\n\r"
 main:
     STMFD sp!, {r4-r12,lr}
 
-    LDR r0, =array
-    MOV r1, #arraySz
-    BL array_fill_random
-
-    LDR r0, =array
+    LDR r0, =arrayTest
     MOV r1, #arraySz
     BL array_print
 
-    MOV r0, #2                      @ Test right
-    BL right
-    MOV r1, r0
-    LDR r0, =s_digit
-    BL printf
-
-    MOV r0, #2                      @ Test left
-    BL left
-    MOV r1, r0
-    LDR r0, =s_digit
-    BL printf
-
-    MOV r0, #2                      @ Test  parent
-    BL parent
-    MOV r1, r0
-    LDR r0, =s_digit
-    BL printf
-
-    LDR r0, =array
+    LDR r0, =arrayTest
     MOV r1, #arraySz
-    BL array_fill
-    LDR r0, =array
-    MOV r1, #0
-    MOV r2, #8
-    MOV r3, #4
-    BL array_ofWrdSwap
-    LDR r0, =array
+    MOV r2, #4
+    BL buildMaxHeap
+
+    LDR r0, =arrayTest
     MOV r1, #arraySz
     BL array_print
 .Lend:
@@ -132,39 +118,109 @@ parent:
     LDMFD sp!, {pc}
 .ENDFUNC
 
-
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ maxHeapify()                                    │
 @│ param(r0): The array to heappify.               │
 @│ param(r1): Index of the tree to heapfiy.        │
 @│ param(r2): Length of the array.                 │
 @│ param(r3): Size of an element in the array.     │
-@│ return: index of the parent.                    │
+@│ return: nothing                                 │
 @└─────────────────────────────────────────────────┘  
 .FUNC maxHeapify
 maxHeapify:
-    STMFD sp!, {r4-r8,lr}
+    STMFD sp!, {r4-r12,lr}
+                            @ Move params out of temp space
+    MOV r5, r0              @ r5 array
+    MOV r6, r1              @ r6 Index of root
+    MOV r7, r2              @ r7 Length of array
+    MOV r8, r3              @ r8 size of element
 
-    MOV r5, r0
-    MOV r0, r1
+    MOV r0, r6
     BL  left
-    MOV r6, r0              @ lft
+    MOV r9, r0              @ lft
 
-    MOV r0, r1
+    MOV r0, r6
     BL right
-    MOV r7, r0              @ rght
+    MOV r10, r0             @ rght
 
-    CMP r6, r2              @ lft >= a.length
+    CMP r9, r7              @ lft >= a.length
     BHS .LmaxHeapify_end
-    CMP r6, #0              @ lft < 0
+    CMP r9, #0              @ lft < 0
     BLO .LmaxHeapify_end
     
-    CMP r7, r2              @ rght >= a.length
+.Ltest_left:
+    MUL r0, r9, r8          @ lft*elementSz
+    LDR r0, [r5,r0]         @ value in lft
+    MUL r1, r6, r8          @ root_index*elementSz
+    LDR r1, [r5,r1]         @ value in root
+    CMP r0, r1              @ lft_value > root_value
+    BLO .Ltest_right        @ lft_value < root_value skip
+                            @ Params for array_swap
+        MOV r0, r5          @ ptr_array
+        MOV r1, r9          @ lft_index
+        MOV r2, r6          @ root_index
+        MOV r3, r8          @ elementSz
+        BL array_swap
+                            @ Params for maxHeapify
+        MOV r0, r5          @ ptr_array
+        MOV r1, r9          @ left_index
+        MOV r2, r7          @ length of array
+        MOV r3, r8          @ elementSz
+        BL maxHeapify
+
+    CMP r10, r7             @ rght >= a.length
     BHS .LmaxHeapify_end
-    CMP r7, 0               @ rght < 0
+    CMP r10, #0              @ rght < 0
     BLO .LmaxHeapify_end
 
+.Ltest_right:
+    MUL r0, r10, r8         @ rght*elementSz
+    LDR r0, [r5,r0]         @ value in rght 
+    MUL r1, r6, r8          @ root_index*elementSz
+    LDR r1, [r5,r1]         @ value in root
+    CMP r0, r1              @ rght_value > root_value
+    BLO .LmaxHeapify_end    @ rght_value < root_value skip
+        MOV r0, r5
+        MOV r1, r10
+        MOV r2, r6
+        MOV r3, r8
+        BL array_swap
+                            @ Params for maxHeapify
+        MOV r0, r5
+        MOV r1, r10         @ rght_index
+        MOV r2, r7
+        MOV r3, r8
+        BL maxHeapify
 .LmaxHeapify_end:
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4-r8,pc}
+    LDMFD sp!, {r4-r12,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ buildMaxHeap()                                  │
+@│ param(r0): The array to heapify.                │
+@│ param(r1): Length of the array.                 │
+@│ param(r2): Size of an element in the array.     │
+@│ return: nothing                                 │
+@└─────────────────────────────────────────────────┘  
+.FUNC buildMaxHeap
+buildMaxHeap:
+    STMFD sp!, {r4-r6,lr}
+
+    MOV r4, r1, LSR #1    @ r4 is loop counter. a.length/2
+    SUB r4, r4, #1        @ a.length/2 - 1
+    MOV r5, r1            @ r5 length or array
+    MOV r6, r2            @ r6 elementSz
+    MOV r7, r0            @ store array_ptr in r7 for func call
+    .LbuildMaxHeap_loop:
+        MOV r0, r7
+        MOV r1, r4
+        MOV r2, r5
+        MOV r3, r6
+        BL maxHeapify
+        SUBS r4, r4, #1
+    BNE .LbuildMaxHeap_loop
+.LbuildMaxHeap_end:
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r6,pc}
 .ENDFUNC
