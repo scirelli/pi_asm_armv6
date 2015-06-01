@@ -430,6 +430,9 @@ You can use labels to mark the beginning and end of an array of bytes
 Then just load the address of values into a register and endvalues into another, increment the first address until it equals the second.
 
 .float
+.req      @ The register equate directive maps a symbol to a register. Its a bit like using a define statement in C. I use them all the time because it makes the source just that much easier to read.
+                Example: li .req r0  @ mapped the symbol lo to r0. 
+.rept <n>  @ Repeat directive repeats a block of code terminated by .endr n times.
 
 PUSH
 POP

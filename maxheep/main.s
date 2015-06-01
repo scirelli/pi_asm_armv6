@@ -124,8 +124,10 @@ randArrayTest:
 .FUNC bigRandArrayTest
 bigRandArrayTest:
     STMFD sp!, {lr}
+    lo .req r0;
+    lo .req r0;
                             @ Create space for the array
-    MOV r0, #bigArraySz 
+    MOV lo, #bigArraySz 
     MOV r1, #4
     MUL r0, r0, r1
     BL malloc
