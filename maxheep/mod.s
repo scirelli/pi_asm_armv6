@@ -23,13 +23,9 @@ main:
     .Lloop:
         MOV  num, j
         MOV  den, i    
-        BL div
-
-
-
+        BL idiv
 
         LDR r0, =.LC1
-        MOV r1, r2
         BL printf
 
         SUBS j, j, #1
