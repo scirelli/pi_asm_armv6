@@ -125,8 +125,14 @@ array_print:
        CMP r7, r6
        BHS .Larray_print_last_element
        ADD r7, r7, #1
+       
+       MOV r0, r6
+       MOV r1, #10
+       BL mod
+
+       LDRNE r0, =s_digit_comma
+       LDREQ r0, =s_digit
        LDR r1, [r5], #+4
-       LDR r0, =s_digit_comma
        BL  printf
     BAL .Larray_print_loop
 

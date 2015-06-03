@@ -56,7 +56,6 @@ main:
     BL bigRandArrayTest
     LDR r0,=s_nl
     BL printf
-
 .Lend:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}

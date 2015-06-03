@@ -1,8 +1,10 @@
-.LC0:
-	.asciz	"Num=%d\tDen=%d\tQuo=%d\tMod=%d\n"
-.LC1:
-	.asciz	"Mod=%d\n"
+.LC0: .asciz	"Num=%d\tDen=%d\tQuo=%d\tMod=%d\n"
+.LC1: .asciz	"Mod=%d\n"
+.LC2: .asciz    "\n\r"
+.LC3: .asciz    "Quotient= %d\n"
 loopCnt=5
+numerator=10
+denominator=2
 .text
 .align	2
 
@@ -17,20 +19,32 @@ main:
     den  .req r1 
     mod  .req r2
 
-    MOV i, #loopCnt
-    MOV j, #loopCnt
+    MOV i, #numerator
+    MOV j, #denominator
 
     .Lloop:
-        MOV  num, j
-        MOV  den, i    
-        BL idiv
-
+        MOV  num, i
+        MOV  den, j    
+        BL div
+        MOV r1, r0
+        MOV r4, r0
+        LDR r0, =.LC3
+        BL printf
+        
+        @MUL r4, j, r4   @ get the remainder
+        @SUB r1, i, r4
+        MOV num, i
+        MOV den, j
+        BL mod
+        MOV r1, r0
         LDR r0, =.LC1
         BL printf
 
         SUBS j, j, #1
         BNE .Lloop
-    MOV j, #loopCnt
+    MOV j, #denominator
+    LDR r0, =.LC2
+    BL printf
     SUBS i, i, #1
     BNE .Lloop
 

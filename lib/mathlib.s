@@ -6,8 +6,8 @@
     Copyright 2005 Henry Thomas
 
 \*---------------------------------------------------------------------------*/
-.global	div
-.func div
+.GLOBAL	div
+.FUNC div
 div:
     num     .req r0     @ map register equates 
     den     .req r1 
@@ -80,4 +80,29 @@ div:
     cmp sign, #0;
     rsbmi num, num, #0             @ negate quotient if sign < 0
     bx lr
+.ENDFUNC
+
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ mod()                                           │
+@│ param(r0): Dividend/numerator.                  │
+@│ param(r1): Divisor/denominator.                 │
+@└─────────────────────────────────────────────────┘  
+.GLOBAL	mod
+.FUNC mod
+mod:
+	STMFD	sp!, {r4,r5,lr}
+    numr .req r4; denn .req r5
+
+    MOV numr, r0
+    MOV denn, r1
+
+    BL div
+    
+    MUL r0, denn, r0
+    SUB r0, numr, r0
+
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {r4,r5,lr}
+BX lr
 .ENDFUNC
