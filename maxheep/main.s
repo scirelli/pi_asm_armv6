@@ -25,6 +25,7 @@ s_nl:          .asciz "\n\r"
 s_simpleTest:  .asciz "Simple static array test:\n"
 s_simpleTest2: .asciz "Simple static random filled array test:\n"
 s_simpleTest3: .asciz "Simple dynamic random filled array test of size (%d):\n"
+s_simpleTest4: .asciz "Get max value:\n"
 .TEXT
 .ALIGN 2
 
@@ -56,6 +57,10 @@ main:
     BL bigRandArrayTest
     LDR r0,=s_nl
     BL printf
+
+    LDR r0,=s_simpleTest4
+    BL printf
+    BL maxItemTest
 .Lend:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
@@ -154,7 +159,61 @@ bigRandArrayTest:
     MOV r1, #bigArraySz
     BL array_print
 
+    MOV r0, r4
+    BL free
 .LbigRandArrayTest_end:
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ maxItemTest()                                   │
+@│ return: nothing                                 │
+@└─────────────────────────────────────────────────┘  
+.FUNC maxItemTest
+maxItemTest:
+    STMFD sp!, {lr}
+    array   .req r4;
+    arraySz .req r5;
+                               @ Create space for the array
+    MOV arraySz, #bigArraySz 
+    MOV r1, #4
+    MUL r0, arraySz, r1
+    BL malloc
+    MOV array, r0              @ Keep a reference to the array
+    MOV r1, #bigArraySz        @ Fill the array
+    BL array_fill_random
+
+    MOV r0, array
+    MOV r1, #bigArraySz
+    BL array_print
+
+    LDR r0,=s_nl
+    BL printf
+
+    MOV r0, array
+    MOV r1, #bigArraySz
+    MOV r2, #4
+    BL buildMaxHeap
+
+    MOV r0, array
+    MOV r1, #bigArraySz
+    BL array_print
+
+    LDR r0,=s_nl
+    BL printf
+
+
+    MOV r0, array
+    BL maxHeap_getMax
+    MOV r1, r0
+    LDR r0,=s_digit
+    BL printf
+
+
+    MOV r0, r4
+    BL free
+.LmaxItemTest:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {pc}
 .ENDFUNC

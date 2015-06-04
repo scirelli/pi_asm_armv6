@@ -211,3 +211,19 @@ buildMaxHeap:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4-r6,pc}
 .ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ maxHeap_getMax()                                │
+@│ param(r0): The max heap.                        │
+@│ return: The root node.                          │
+@└─────────────────────────────────────────────────┘  
+.GLOBAL maxHeap_getMax
+.FUNC maxHeap_getMax
+maxHeap_getMax:
+    STMFD sp!, {lr}
+    
+    LDR r0, [r0]
+maxHeap_getMax_end:
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {pc}
+.ENDFUNC
