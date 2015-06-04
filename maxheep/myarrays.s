@@ -7,6 +7,7 @@
 @arraySz=1024
 @array: .SKIP 4096 
 s_digit: .asciz "%d\n\r"
+s_digit_comma_nl: .asciz "%d,\n\r"
 s_digit_comma: .asciz "%d,"
 RAND_MAX=2147483647
 
@@ -115,6 +116,8 @@ LDMFD sp!, {r4,pc}             @ Restore the registers and link reg.
 array_print:
     STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
 
+    WRAP_CNT=50
+
     MOV r5, r0
     SUBS r1, r1, #1
     BMI .Larray_print_return
@@ -123,15 +126,16 @@ array_print:
 
     .Larray_print_loop:
        CMP r7, r6
-       BHS .Larray_print_last_element
+           BHS .Larray_print_last_element
        ADD r7, r7, #1
        
-       MOV r0, r6
-       MOV r1, #10
+       MOV r0, r7
+       MOV r1, #WRAP_CNT
        BL mod
-
-       LDRNE r0, =s_digit_comma
-       LDREQ r0, =s_digit
+       
+       CMP r0, #0
+           LDRNE r0, =s_digit_comma
+           LDREQ r0, =s_digit_comma_nl
        LDR r1, [r5], #+4
        BL  printf
     BAL .Larray_print_loop

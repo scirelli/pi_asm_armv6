@@ -5,7 +5,7 @@
 @ array is 10 integeers, int is 4 bytes. 4*10
 .DATA
 arraySz=10
-bigArraySz=100
+bigArraySz=1000
 arrayTestSz=10
 array: .SKIP 40
 arrayTest:
@@ -141,6 +141,9 @@ bigRandArrayTest:
     MOV r0, r4
     MOV r1, #bigArraySz
     BL array_print
+
+    LDR r0,=s_nl
+    BL printf
 
     MOV r0, r4
     MOV r1, #bigArraySz
