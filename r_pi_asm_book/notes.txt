@@ -673,3 +673,15 @@ Since we have introduced new registers we should state how to use them when call
  * All other floating point registers (s16-s31 and d8-d15) must have their values preserved upon leaving the function. Instructions vpush and vpop can be used for that.
  * If a function returns a floating-point value, the return register will be s0 or d0.
 Finally a note about variadic functions like printf: you cannot pass a single-precision floating point to one of such functions. Only doubles can be passed. So you will need to convert the single-precision values into double-precision values. Note also that usual integer registers are used (r0-r3), so you will only be able to pass up to 2 double-precision values, the remaining must be passed on the stack. In particular for printf, since r0 contains the address of the string format, you will only be able to pass a double-precision in {r2,r3}.
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Integer Divsion GCC            │
+@└────────────────────────────────┘
+bl __aeabi_idiv
+bl __aeabi_uidiv
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Integer Mod GCC                │
+@└────────────────────────────────┘
+bl __aeabi_idivmod
+bl __aeabi_uidivmod
