@@ -227,3 +227,28 @@ maxHeap_getMax_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {pc}
 .ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ maxHeap_removeMax()                             │
+@│ param(r0): The max heap.                        │
+@│ param(r1): Length of the array.                 │
+@│ return: The value at the top of the maxheap     │
+@│ then set's the root node to 0 and heapifies.    │
+@└─────────────────────────────────────────────────┘  
+.GLOBAL maxHeap_removeMax
+.FUNC maxHeap_removeMax
+maxHeap_removeMax:
+    STMFD sp!, {r4,lr}
+    
+    LDR r4, [r0]                  @ root node's value in r2
+    MOV r3, #0
+    STR r3, [r0]
+    MOV r2, r1
+    MOV r1, #0                    @ the root node's index
+    MOV r3, #4
+    # BL maxHeapify
+    MOV r0, r4
+maxHeap_removeMax_end:
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4,pc}
+.ENDFUNC

@@ -131,9 +131,9 @@ array_print:
        
        MOV r0, r7
        MOV r1, #WRAP_CNT
-       BL mod
-       
-       CMP r0, #0
+       # BL mod                                @  remainder in r0
+       BL __aeabi_idivmod                      @ __aeabi_idivmod returns the remainder in r1
+       CMP r1, #0
            LDRNE r0, =s_digit_comma
            LDREQ r0, =s_digit_comma_nl
        LDR r1, [r5], #+4
