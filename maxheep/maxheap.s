@@ -246,7 +246,7 @@ maxHeap_removeMax:
     MOV r2, r1
     MOV r1, #0                    @ the root node's index
     MOV r3, #4
-    # BL maxHeapify
+    BL maxHeapify
     MOV r0, r4
 maxHeap_removeMax_end:
 @ ─────────────────────────────────────────────────

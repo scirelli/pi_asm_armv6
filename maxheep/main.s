@@ -41,26 +41,26 @@ main:
     STMFD sp!, {r4-r12,lr}
 
     LDR r0,=s_simpleTest
-    BL printf
+    #BL printf
     BL simpleTest
     LDR r0,=s_nl
-    BL printf
+    #BL printf
 
     LDR r0,=s_simpleTest2
-    BL printf
+    #BL printf
     BL randArrayTest
     LDR r0,=s_nl
-    BL printf
+    #BL printf
 
     LDR r0,=s_simpleTest3
     MOV r1, #bigArraySz
-    BL printf
+    #BL printf
     BL bigRandArrayTest
     LDR r0,=s_nl
-    BL printf
+    #BL printf
 
     LDR r0,=s_simpleTest4
-    BL printf
+    #BL printf
     BL maxItemTest
 
     LDR r0,=s_simpleTest5
@@ -207,19 +207,17 @@ maxItemTest:
     LDR r0,=s_nl
     BL printf
 
-
     MOV r0, array
     BL maxHeap_getMax
     MOV r1, r0
     LDR r0,=s_digit
     BL printf
 
-
     MOV r0, r4
     BL free
 .LmaxItemTest:
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {pc}
+    LDMFD sp!, {r4-r6,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -259,13 +257,16 @@ topItemTest:
     LDR r0,=s_nl
     BL printf
 
-
-    MOV r0, array
-    MOV r1, #bigArraySz
-    BL maxHeap_removeMax
-    MOV r1, r0
-    LDR r0,=s_digit
-    BL printf
+   .Lremove_Max:
+        MOV r0, array
+        MOV r1, #bigArraySz
+        BL maxHeap_removeMax
+        MOV r5, r0
+        MOV r1, r0
+        LDR r0,=s_digit
+        BL printf
+        CMP r5, #0
+    BNE .Lremove_Max
 
     MOV r0, r4
     BL free
