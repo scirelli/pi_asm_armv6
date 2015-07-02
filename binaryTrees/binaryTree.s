@@ -113,3 +113,62 @@ binTree_insert:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4-r5,pc}
 .ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ binTree_minSort()                               │
+@│    Recursive version.                           │
+@│ param(r0): rootNode.                            │
+@│ param(r1): Array buffer.                        │
+@│ param(r2): Array buffer size.                   │
+@│ param(r3): Array buffer current index.          │
+@│ return: Amount of buffer used.                  │
+@└─────────────────────────────────────────────────┘  
+.GLOBAL binTree_minSort
+.FUNC binTree_minSort
+binTree_minSort:
+    STMFD sp!, {r4,lr}          @ Stack is supposed to be 8byte aligned.
+    
+    LDR r4, [r0, #NODE_LEFT]    @ Travers left child frist
+    CMP r4, #NULL
+    BEQ .LbinTree_leftChildisNull
+        MOV r0, r4
+        BL binTree_minSort
+    .LbinTree_leftChildisNull:
+
+    LDR r4, [r0, #NODE_DATA]    @ Push the value onto the buffer
+    STR r4, [r1, r3, LSL #2] 
+    ADD r3, r3, #1
+
+    LDR r4, [r0, #NODE_RIGHT]
+    CMP r4, #NULL
+    BEQ .LbinTree_rightChildisNull
+        MOV r0, r4
+        BL binTree_minSort
+    .LbinTree_rightChildisNull:
+
+.LbinTree_minSort_end:
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ binTree_minSortItter()                          │
+@│    Recursive version.                           │
+@│ param(r0): rootNode.                            │
+@│ param(r1): Array buffer.                        │
+@│ param(r2): Array buffer size.                   │
+@│ param(r3): Array buffer current index.          │
+@│ return: Amount of buffer used.                  │
+@└─────────────────────────────────────────────────┘  
+.GLOBAL binTree_minSortItter
+.FUNC binTree_minSortItter
+binTree_minSortItter:
+    STMFD sp!, {r4,lr}          @ Stack is supposed to be 8byte aligned.
+    
+    LDR r4, [r0, #NODE_LEFT]    @ Travers left child frist
+
+
+.LbinTree_minSortItter_end:
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4,pc}
+.ENDFUNC

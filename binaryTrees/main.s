@@ -32,6 +32,7 @@ testData:
     .word 23
 testDataSz:
     .word 13
+arrayBuffer: .SKIP 13*4
 .ALIGN 4
 .TEXT
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -42,6 +43,22 @@ testDataSz:
 .GLOBAL main
 .FUNC main
 main:
+    STMFD sp!, {r4-r12,lr}
+
+    BL testInsert
+
+.Lend:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r12,lr}
+    BX lr
+.ENDFUNC
+
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ testInsert()                                    │
+@└─────────────────────────────────────────────────┘  
+.FUNC testInsert
+testInsert:
     STMFD sp!, {r4-r12,lr}
 
     LDR r5, =testData
@@ -63,7 +80,22 @@ main:
     CMP r7, r6
     BLO .LforLoop
 
-.Lend:
+.LtestInsert_end:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r12,lr}
+    BX lr
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ testMinSort()                                   │
+@│ param(r0): rootNode of the tree.                │
+@└─────────────────────────────────────────────────┘  
+.FUNC testMinSort
+testMinSort:
+    STMFD sp!, {r4-r12,lr}
+
+
+.LtestMinSort_end:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
     BX lr
