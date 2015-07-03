@@ -131,8 +131,10 @@ binTree_minSort:
     LDR r4, [r0, #NODE_LEFT]    @ Travers left child frist
     CMP r4, #NULL
     BEQ .LbinTree_leftChildisNull
+        STMFD sp!, {r0}
         MOV r0, r4
         BL binTree_minSort
+        LDMFD sp!, {r0}
     .LbinTree_leftChildisNull:
 
     LDR r4, [r0, #NODE_DATA]    @ Push the value onto the buffer
@@ -142,8 +144,10 @@ binTree_minSort:
     LDR r4, [r0, #NODE_RIGHT]
     CMP r4, #NULL
     BEQ .LbinTree_rightChildisNull
+        STMFD sp!, {r0}
         MOV r0, r4
         BL binTree_minSort
+        LDMFD sp!, {r0}
     .LbinTree_rightChildisNull:
 
 .LbinTree_minSort_end:

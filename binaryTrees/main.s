@@ -46,6 +46,7 @@ main:
     STMFD sp!, {r4-r12,lr}
 
     BL testInsert
+    BL testMinSort
 
 .Lend:
  @─────────────────────────────────────────────────
@@ -56,6 +57,8 @@ main:
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ testInsert()                                    │
+@│ param(r0):                                      │
+@│ return: Root node of the tree.                  │
 @└─────────────────────────────────────────────────┘  
 .FUNC testInsert
 testInsert:
@@ -81,6 +84,7 @@ testInsert:
     BLO .LforLoop
 
 .LtestInsert_end:
+    MOV r0, r4
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
     BX lr
@@ -93,8 +97,16 @@ testInsert:
 .FUNC testMinSort
 testMinSort:
     STMFD sp!, {r4-r12,lr}
+    MOV fp, sp
+    SUB sp, sp, #56                             @ Make room for the buffer
+    
+    MOV r1, sp 
+    MOV r2, #13
+    MOV r3, #0
+    BL binTree_minSort
 
-
+    MOV sp, fp                                  @ Reset the stack pointer
+    MOV r0, #0
 .LtestMinSort_end:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
