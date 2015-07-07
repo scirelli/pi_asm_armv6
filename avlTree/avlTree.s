@@ -1,6 +1,6 @@
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│                binaryTrees.s                                                │
-@│ Playing witih binary trees.                                                 │
+@│                avlTree.s                                                    │
+@│ Playing with balanced binary trees.                                         │
 @│                                                                             │
 @│ To the left is <= to the right is >                                         │
 @│                                                                             │
@@ -8,13 +8,15 @@
 @│      rightChild                                                             │
 @│      leftChild                                                              │
 @│      uintData                                                               │
+@│      height     @ signed int                                                │
 @│                                                                             │
 @└─────────────────────────────────────────────────────────────────────────────┘
 
 NODE_RIGHT=0
 NODE_LEFT=4
 NODE_DATA=8
-NODE_SIZE=16
+NODE_HEIGHT=12
+NODE_SIZE=20
 NULL=0
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -24,17 +26,18 @@ NULL=0
 .GLOBAL node_create
 .FUNC node_create
 node_create:
-    STMFD sp!, {lr}
+    STMFD sp!, {r4,lr}
     MOV r0, #NODE_SIZE
     BL malloc
                             @ Zero the node. 
     MOV r1, #NULL
     MOV r2, #NULL
     MOV r3, #NULL
-    STM r0, {r1-r3}
+    MOV r4, #NULL
+    STM r0, {r1-r4}
 .Lnode_create_end:
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {pc}
+    LDMFD sp!, {r4,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -54,21 +57,22 @@ node_createWithValue:
     MOV r1, #NULL 
     MOV r2, #NULL
     MOV r3, r4 
-    STM r0, {r1-r3}
+    MOV r4, #NULL
+    STM r0, {r1-r4}
 .Lnode_createWithValue_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ binTree_insert()                                │
+@│ avlTree_insert()                                │
 @│ param(r0): rootNode to insert to.               │
 @│ param(r1): The data to insert.                  │
 @│ return: A pointer to the new node.              │
 @└─────────────────────────────────────────────────┘  
-.GLOBAL binTree_insert
-.FUNC binTree_insert
-binTree_insert:
+.GLOBAL avlTree_insert
+.FUNC avlTree_insert
+avlTree_insert:
     STMFD sp!, {r4-r5,lr}
     
     MOV r4, r0
@@ -92,7 +96,7 @@ binTree_insert:
         .Lelse_LeftRecurse:
             LDR r0, [r4, #NODE_LEFT]
             MOV r1, r5
-            BL binTree_insert
+            BL avlTree_insert
         .Lendif_hasLeftChild:
         B .Lendif_DataTest
     .Lelse_GreaterThan:
@@ -107,15 +111,46 @@ binTree_insert:
         .Lelse_rightRecurse:
             LDR r0, [r4, #NODE_RIGHT]
             MOV r1, r5
-            BL binTree_insert
+            BL avlTree_insert
     .Lendif_DataTest:
-.LbinTree_insert_end:
+.LavlTree_insert_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4-r5,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ binTree_minSort()                               │
+@│ avlTree_nodeHeight()                            │
+@│ param(r0): A node.                              │
+@│ return: Signed int. The height of the node.     │
+@└─────────────────────────────────────────────────┘  
+.GLOBAL avlTree_nodeHeight
+.FUNC avlTree_nodeHeight
+avlTree_nodeHeight:
+    STMFD sp!, {r4,lr}          @ Stack is supposed to be 8byte aligned.
+    
+    LDR   r1, [r0, #NODE_LEFT]
+    CMP   r1, #NULL
+    LDRNE r1, [r1, #NODE_HEIGHT]
+    MOVEQ r1, #-1
+
+    LDR r2, [r0, #NODE_RIGHT]
+    CMP   r2, #NULL
+    LDRNE r2, [r2, #NODE_HEIGHT]
+    MOVEQ r2, #-1
+
+
+.LavlTree_nodeHeight_end:
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4,pc}
+.ENDFUNC
+
+MACRO
+max $p1, $p2
+
+MEND
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ avlTree_minSort()                               │
 @│    Recursive version.                           │
 @│ param(r0): rootNode.                            │
 @│ param(r1): Array buffer.                        │
@@ -123,19 +158,19 @@ binTree_insert:
 @│ param(r3): Array buffer current index.          │
 @│ return: Amount of buffer used.                  │
 @└─────────────────────────────────────────────────┘  
-.GLOBAL binTree_minSort
-.FUNC binTree_minSort
-binTree_minSort:
+.GLOBAL avlTree_minSort
+.FUNC avlTree_minSort
+avlTree_minSort:
     STMFD sp!, {r4,lr}          @ Stack is supposed to be 8byte aligned.
     
     LDR r4, [r0, #NODE_LEFT]    @ Travers left child frist
     CMP r4, #NULL
-    BEQ .LbinTree_leftChildisNull
+    BEQ .LavlTree_leftChildisNull
         STMFD sp!, {r0}
         MOV r0, r4
-        BL binTree_minSort
+        BL avlTree_minSort
         LDMFD sp!, {r0}
-    .LbinTree_leftChildisNull:
+    .LavlTree_leftChildisNull:
 
     LDR r4, [r0, #NODE_DATA]    @ Push the value onto the buffer
     STR r4, [r1, r3, LSL #2] 
@@ -143,20 +178,20 @@ binTree_minSort:
 
     LDR r4, [r0, #NODE_RIGHT]
     CMP r4, #NULL
-    BEQ .LbinTree_rightChildisNull
+    BEQ .LavlTree_rightChildisNull
         STMFD sp!, {r0}
         MOV r0, r4
-        BL binTree_minSort
+        BL avlTree_minSort
         LDMFD sp!, {r0}
-    .LbinTree_rightChildisNull:
+    .LavlTree_rightChildisNull:
 
-.LbinTree_minSort_end:
+.LavlTree_minSort_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ binTree_minSortItter()                          │
+@│ avlTree_maxSort()                               │
 @│    Recursive version.                           │
 @│ param(r0): rootNode.                            │
 @│ param(r1): Array buffer.                        │
@@ -164,41 +199,19 @@ binTree_minSort:
 @│ param(r3): Array buffer current index.          │
 @│ return: Amount of buffer used.                  │
 @└─────────────────────────────────────────────────┘  
-.GLOBAL binTree_minSortItter
-.FUNC binTree_minSortItter
-binTree_minSortItter:
-    STMFD sp!, {r4,lr}          @ Stack is supposed to be 8byte aligned.
-    
-    LDR r4, [r0, #NODE_LEFT]    @ Travers left child frist
-
-
-.LbinTree_minSortItter_end:
-@ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4,pc}
-.ENDFUNC
-
-@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ binTree_maxSort()                               │
-@│    Recursive version.                           │
-@│ param(r0): rootNode.                            │
-@│ param(r1): Array buffer.                        │
-@│ param(r2): Array buffer size.                   │
-@│ param(r3): Array buffer current index.          │
-@│ return: Amount of buffer used.                  │
-@└─────────────────────────────────────────────────┘  
-.GLOBAL binTree_maxSort
-.FUNC binTree_maxSort
-binTree_maxSort:
+.GLOBAL avlTree_maxSort
+.FUNC avlTree_maxSort
+avlTree_maxSort:
     STMFD sp!, {r4,lr}          @ Stack is supposed to be 8byte aligned.
     
     LDR r4, [r0, #NODE_RIGHT]
     CMP r4, #NULL
-    BEQ .LbinTree_maxLeftChildisNull
+    BEQ .LavlTree_maxLeftChildisNull
         STMFD sp!, {r0}
         MOV r0, r4
-        BL binTree_maxSort
+        BL avlTree_maxSort
         LDMFD sp!, {r0}
-    .LbinTree_maxLeftChildisNull:
+    .LavlTree_maxLeftChildisNull:
 
     LDR r4, [r0, #NODE_DATA]    @ Push the value onto the buffer
     STR r4, [r1, r3, LSL #2] 
@@ -206,14 +219,14 @@ binTree_maxSort:
 
     LDR r4, [r0, #NODE_LEFT]    @ Travers left child frist
     CMP r4, #NULL
-    BEQ .LbinTree_maxRightChildisNull
+    BEQ .LavlTree_maxRightChildisNull
         STMFD sp!, {r0}
         MOV r0, r4
-        BL binTree_maxSort
+        BL avlTree_maxSort
         LDMFD sp!, {r0}
-    .LbinTree_maxRightChildisNull:
+    .LavlTree_maxRightChildisNull:
 
-.LbinTree_maxSort_end:
+.LavlTree_maxSort_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
 .ENDFUNC

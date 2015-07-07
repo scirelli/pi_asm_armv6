@@ -3,7 +3,7 @@ FILE=main
 all: $(FILE)
 
 $(FILE): $(FILE).s
-	gcc -g -o $(FILE) $(FILE).s binaryTree.s ../lib/array/arrays.s
+	gcc -g -o $(FILE) $(FILE).s avlTree.s ../lib/array/arrays.s
 
 c_source:
 	gcc -S -std=c99 -o $(FILE).s $(FILE).c
