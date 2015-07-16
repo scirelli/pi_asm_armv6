@@ -80,7 +80,7 @@ testInsert:
     .LforLoop:
         MOV r0, r4
         LDR r1, [r5, r7, LSL #2] 
-        BL binTree_insert
+        BL avlTree_insert
         ADD r7, r7, #1
     .LforCondCheck:
     CMP r7, r6
@@ -106,7 +106,7 @@ testMinSort:
     MOV r1, sp 
     MOV r2, #13
     MOV r3, #0
-    BL binTree_minSort
+    BL avlTree_minSort
     
     MOV r0, sp
     MOV r1, #13
@@ -133,7 +133,7 @@ testMaxSort:
     MOV r1, sp 
     MOV r2, #13
     MOV r3, #0
-    BL binTree_maxSort
+    BL avlTree_maxSort
 
     MOV r0, sp
     MOV r1, #13

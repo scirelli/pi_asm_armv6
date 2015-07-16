@@ -11,6 +11,7 @@
 @│      height     @ signed int                                                │
 @│                                                                             │
 @└─────────────────────────────────────────────────────────────────────────────┘
+.TEXT
 
 NODE_RIGHT=0
 NODE_LEFT=4
@@ -18,6 +19,12 @@ NODE_DATA=8
 NODE_HEIGHT=12
 NODE_SIZE=20
 NULL=0
+
+.MACRO max $p0, $p1, $p2
+    CMP   \$p1, \$p2
+    MOVLE \$p0, \$p2
+    MOVGT \$p0, \$p1
+.ENDM
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ node_create()                                   │
@@ -62,6 +69,58 @@ node_createWithValue:
 .Lnode_createWithValue_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ avlTree_nodeHeight()                            │
+@│ param(r0): Node to get the height of.           │
+@│ return: Returns the height of a node.           │
+@└─────────────────────────────────────────────────┘  
+.FUNC avlTree_nodeHeight
+avlTree_nodeHeight:
+    STMFD sp!, {r4-r5,lr}
+    
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r5,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ avlTree_nodeWeight()                            │
+@│ param(r0): Node to get the weight of.           │
+@│ return: Returns the weight of a node.           │
+@└─────────────────────────────────────────────────┘  
+.FUNC avlTree_nodeWeight
+avlTree_nodeWeight:
+    STMFD sp!, {r4-r5,lr}
+    
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r5,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ avlTree_leftRotate()                            │
+@│ param(r0): Node to do the left rotate around.   │
+@│ return: A node.                                 │
+@└─────────────────────────────────────────────────┘  
+.FUNC avlTree_leftRotate
+avlTree_leftRotate:
+    STMFD sp!, {r4-r5,lr}
+    
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r5,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ avlTree_rightRotate()                           │
+@│ param(r0): Node to do the right rotate around.  │
+@│ return: A node.                                 │
+@└─────────────────────────────────────────────────┘  
+.FUNC avlTree_rightRotate
+avlTree_rightRotate:
+    STMFD sp!, {r4-r5,lr}
+    
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r5,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -143,11 +202,6 @@ avlTree_nodeHeight:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
 .ENDFUNC
-
-MACRO
-max $p1, $p2
-
-MEND
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ avlTree_minSort()                               │
