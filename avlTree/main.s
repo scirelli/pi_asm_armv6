@@ -146,3 +146,45 @@ testMaxSort:
     LDMFD sp!, {r4-r12,lr}
     BX lr
 .ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ testNodeHeight()                                │
+@└─────────────────────────────────────────────────┘  
+.FUNC testNodeHeight
+testNodeHeight:
+    STMFD sp!, {fp,lr}           @ Keep the stack 8byte aligned
+    MOV fp, sp                   @ l,r,d,h
+    SUB sp, (NODE_SIZE)*3        @ Make room on the stack for 3 nodes
+                                 @
+
+    @┍━━━━━━━┑
+    @│ Stack │
+    @├───────┤<- sp
+    @│  LR   │
+    @├───────┤<- sp-4
+    @│  FP   │ 
+    @├───────┤<- sp-8   ^sp+40
+    @│ Node1 │ 
+    @├───────┤<- sp-24  ^sp+24
+    @│ Node2 │
+    @├───────┤<- sp-40  ^sp+18
+    @│ Node3 │
+    @├───────┤<- sp-56  ^sp+8
+    @│       │
+
+    ADD r0, sp, #NODE_SIZE       @ Get a ptr to the 1st node
+    ADD r1, sp, NODE_SIZE*2      @ Get the location of the 2nd node
+    STR r1, [r0]                 @ Store the address of 2nd node as right node
+    MOV r2, #2                   @ Make up a height for node 2
+    STR r2, [r1,#NODE_HEIGHT]    @ Store the height into node 2 height
+
+
+    MOV sp, fp
+.LtestNodeHeight_end:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {fp,lr}
+    BX lr
+.ENDFUNC
+
+@┌──────┐
+@└──────┘

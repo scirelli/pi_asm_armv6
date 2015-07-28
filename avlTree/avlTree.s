@@ -17,10 +17,10 @@ NODE_RIGHT=0
 NODE_LEFT=4
 NODE_DATA=8
 NODE_HEIGHT=12
-NODE_SIZE=20
+NODE_SIZE=16
 NULL=0
 
-.MACRO max $p0, $p1, $p2
+.MACRO MAX $p0, $p1, $p2
     CMP   \$p1, \$p2
     MOVLE \$p0, \$p2
     MOVGT \$p0, \$p1
@@ -74,14 +74,29 @@ node_createWithValue:
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ avlTree_nodeHeight()                            │
 @│ param(r0): Node to get the height of.           │
-@│ return: Returns the height of a node.           │
+@│ return: Signed int. The height of the node.     │
 @└─────────────────────────────────────────────────┘  
+.GLOBAL avlTree_nodeHeight
 .FUNC avlTree_nodeHeight
 avlTree_nodeHeight:
-    STMFD sp!, {r4-r5,lr}
+    STMFD sp!, {fp,lr}             @ Stack is supposed to be 8byte aligned.
     
+                                   @ leftH = node.left ? node.left.height : -1
+    LDR   r1, [r0, #NODE_LEFT]     @   
+    CMP   r1, #NULL
+    MOVEQ r1, #-1
+    LDRNE r1, [r1, #NODE_HEIGHT]
+
+                                   @ rightH = node.right ? node.right.height : -1
+    LDR   r2, [r0, #NODE_RIGHT]    @
+    CMP   r2, #NULL
+    MOVEQ r2, #-1
+    LDRNE r2, [r2, #NODE_HEIGHT]
+
+                                   @ Max( leftH, rightH )
+    MAX r0, r1, r2
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4-r5,pc}
+    LDMFD sp!, {fp,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -175,32 +190,6 @@ avlTree_insert:
 .LavlTree_insert_end:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4-r5,pc}
-.ENDFUNC
-
-@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ avlTree_nodeHeight()                            │
-@│ param(r0): A node.                              │
-@│ return: Signed int. The height of the node.     │
-@└─────────────────────────────────────────────────┘  
-.GLOBAL avlTree_nodeHeight
-.FUNC avlTree_nodeHeight
-avlTree_nodeHeight:
-    STMFD sp!, {r4,lr}          @ Stack is supposed to be 8byte aligned.
-    
-    LDR   r1, [r0, #NODE_LEFT]
-    CMP   r1, #NULL
-    LDRNE r1, [r1, #NODE_HEIGHT]
-    MOVEQ r1, #-1
-
-    LDR r2, [r0, #NODE_RIGHT]
-    CMP   r2, #NULL
-    LDRNE r2, [r2, #NODE_HEIGHT]
-    MOVEQ r2, #-1
-
-
-.LavlTree_nodeHeight_end:
-@ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
