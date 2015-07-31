@@ -26,6 +26,17 @@ NULL=0
     MOVGT \$p0, \$p1
 .ENDM
 
+@ int v;           // we want to find the absolute value of v
+@ unsigned int r;  // the result goes here 
+@                            4            8
+@ int const mask = v >> sizeof(int) * CHAR_BIT - 1;
+@ r = (v + mask) ^ mask;
+.MACRO ABS $p0, $p1
+    MOV   \$p0, \$p1, ASR #31
+    ADD   \$p1, \$p1, \$p0
+    EOR   \$p0, \$p0, \$p1
+.ENDM
+
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ node_create()                                   │
 @│ return: pointer to the new node.                │
@@ -92,7 +103,6 @@ avlTree_nodeHeight:
     CMP   r2, #NULL
     MOVEQ r2, #-1
     LDRNE r2, [r2, #NODE_HEIGHT]
-
                                    @ Max( leftH, rightH )
     MAX r0, r1, r2
 @ ─────────────────────────────────────────────────
@@ -104,12 +114,27 @@ avlTree_nodeHeight:
 @│ param(r0): Node to get the weight of.           │
 @│ return: Returns the weight of a node.           │
 @└─────────────────────────────────────────────────┘  
+.GLOBAL avlTree_nodeWeight
 .FUNC avlTree_nodeWeight
 avlTree_nodeWeight:
-    STMFD sp!, {r4-r5,lr}
+    STMFD sp!, {r4,lr}
     
-@ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4-r5,pc}
+                                   @ leftH = node.left ? node.left.height : -1
+    LDR   r1, [r0, #NODE_LEFT]     @   
+    CMP   r1, #NULL
+    MOVEQ r1, #-1
+    LDRNE r1, [r1, #NODE_HEIGHT]
+
+                                   @ rightH = node.right ? node.right.height : -1
+    LDR   r2, [r0, #NODE_RIGHT]    @
+    CMP   r2, #NULL
+    MOVEQ r2, #-1
+    LDRNE r2, [r2, #NODE_HEIGHT]
+    
+    SUB r1, r1, r2                 @ weight = heightLeft - heightRight
+    ABS r0, r1
+@─────────────────────────────────────────────────
+    LDMFD sp!, {r4,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑

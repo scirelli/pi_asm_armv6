@@ -33,8 +33,18 @@ testData:
 testDataSz:
     .word 13
 arrayBuffer: .SKIP 13*4
+sNodeHeight: .asciz "Node height: %d\n"
+sNodeWeight: .asciz "Node Weight: %d\n"
 .ALIGN 4
 .TEXT
+
+NODE_RIGHT=0
+NODE_LEFT=4
+NODE_DATA=8
+NODE_HEIGHT=12
+NODE_SIZE=16
+NULL=0
+
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ main()                                          │
 @│ param(r0): length of the argv array.            │
@@ -51,6 +61,9 @@ main:
     MOV r0, r4
     BL testMaxSort
 
+    BL testNodeHeight
+
+    BL testNodeWeight
 .Lend:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
@@ -154,30 +167,46 @@ testMaxSort:
 testNodeHeight:
     STMFD sp!, {fp,lr}           @ Keep the stack 8byte aligned
     MOV fp, sp                   @ l,r,d,h
-    SUB sp, (NODE_SIZE)*3        @ Make room on the stack for 3 nodes
+    SUB sp, #48                  @ Make room on the stack for 3 nodes
                                  @
+    @ Build the nodes on the stack
+        @┍━━━━━━━┑                     │       │
+        @│ Stack │                     │       │
+        @├───────┤<- sp                ├───────┤
+        @│  LR   │                     │       │
+        @├───────┤<- sp-4              ├───────┤
+        @│  FP   │                     │       │
+        @├───────┤<- sp-8   ^sp+40     ├───────┤
+        @│ Node1 │                     │       │
+        @├───────┤<- sp-24  ^sp+24     ├───────┤
+        @│ Node2 │                     │       │
+        @├───────┤<- sp-40  ^sp+18     ├───────┤
+        @│ Node3 │                     │       │
+        @├───────┤<- sp-56  ^sp+8      ├───────┤
+        @│       │                     │       │
 
-    @┍━━━━━━━┑
-    @│ Stack │
-    @├───────┤<- sp
-    @│  LR   │
-    @├───────┤<- sp-4
-    @│  FP   │ 
-    @├───────┤<- sp-8   ^sp+40
-    @│ Node1 │ 
-    @├───────┤<- sp-24  ^sp+24
-    @│ Node2 │
-    @├───────┤<- sp-40  ^sp+18
-    @│ Node3 │
-    @├───────┤<- sp-56  ^sp+8
-    @│       │
+    MOV r0, sp                   @ Get a ptr to Node3
 
-    ADD r0, sp, #NODE_SIZE       @ Get a ptr to the 1st node
-    ADD r1, sp, NODE_SIZE*2      @ Get the location of the 2nd node
-    STR r1, [r0]                 @ Store the address of 2nd node as right node
-    MOV r2, #2                   @ Make up a height for node 2
-    STR r2, [r1,#NODE_HEIGHT]    @ Store the height into node 2 height
-
+    ADD r1, sp,  #NODE_SIZE      @ Get the location of Node2
+    STR r1, [r0, #NODE_RIGHT]    @ Store the address of Node2 as right node of Node3
+    MOV r2, #1                   @ Make up a height for Node2
+    STR r2, [r1, #NODE_HEIGHT]   @ Store the height into Node2's height
+    MOV r2, #NULL
+    STR r2, [r1, #NODE_LEFT]     @ Make sure node left and right are null for Node2
+    STR r2, [r1, #NODE_RIGHT]    @ Make sure node left and right are null for Node2
+    
+    ADD r1, r1,  #NODE_SIZE      @ Get the address of Node1
+    STR r1, [r0, #NODE_LEFT]     @ Set Node3's left node to Node1
+    MOV r2, #3                   @ Make up a height for Node1
+    STR r2, [r1, #NODE_HEIGHT]   @ Store the height of Node3
+    MOV r2, #NULL
+    STR r2, [r1, #NODE_LEFT]     @ Make sure Node1's left and right children are null
+    STR r2, [r1, #NODE_RIGHT]
+    
+    BL avlTree_nodeHeight
+    MOV r1, r0
+    LDR r0, =sNodeHeight
+    BL printf
 
     MOV sp, fp
 .LtestNodeHeight_end:
@@ -185,6 +214,60 @@ testNodeHeight:
     LDMFD sp!, {fp,lr}
     BX lr
 .ENDFUNC
-
 @┌──────┐
 @└──────┘
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ testNodeWeight()                                │
+@└─────────────────────────────────────────────────┘  
+.FUNC testNodeWeight
+testNodeWeight:
+    STMFD sp!, {fp,lr}           @ Keep the stack 8byte aligned
+    MOV fp, sp                   @ l,r,d,h
+    SUB sp, #48                  @ Make room on the stack for 3 nodes
+                                 @
+    @ Build the nodes on the stack
+        @┍━━━━━━━┑                     │       │
+        @│ Stack │                     │       │
+        @├───────┤<- sp                ├───────┤
+        @│  LR   │                     │       │
+        @├───────┤<- sp-4              ├───────┤
+        @│  FP   │                     │       │
+        @├───────┤<- sp-8   ^sp+40     ├───────┤
+        @│ Node1 │                     │       │
+        @├───────┤<- sp-24  ^sp+24     ├───────┤
+        @│ Node2 │                     │       │
+        @├───────┤<- sp-40  ^sp+18     ├───────┤
+        @│ Node3 │                     │       │
+        @├───────┤<- sp-56  ^sp+8      ├───────┤
+        @│       │                     │       │
+
+    MOV r0, sp                   @ Get a ptr to Node3
+
+    ADD r1, sp,  #NODE_SIZE      @ Get the location of Node2
+    STR r1, [r0, #NODE_RIGHT]    @ Store the address of Node2 as right node of Node3
+    MOV r2, #3                   @ Make up a height for Node2
+    STR r2, [r1, #NODE_HEIGHT]   @ Store the height into Node2's height
+    MOV r2, #NULL
+    STR r2, [r1, #NODE_LEFT]     @ Make sure node left and right are null for Node2
+    STR r2, [r1, #NODE_RIGHT]    @ Make sure node left and right are null for Node2
+    
+    ADD r1, r1,  #NODE_SIZE      @ Get the address of Node1
+    STR r1, [r0, #NODE_LEFT]     @ Set Node3's left node to Node1
+    MOV r2, #1                   @ Make up a height for Node1
+    STR r2, [r1, #NODE_HEIGHT]   @ Store the height of Node3
+    MOV r2, #NULL
+    STR r2, [r1, #NODE_LEFT]     @ Make sure Node1's left and right children are null
+    STR r2, [r1, #NODE_RIGHT]
+    
+    BL avlTree_nodeWeight
+    MOV r1, r0
+    LDR r0, =sNodeWeight
+    BL printf
+
+    MOV sp, fp
+.LtestNodeWeight_end:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {fp,lr}
+    BX lr
+.ENDFUNC
