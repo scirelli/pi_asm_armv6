@@ -15,6 +15,10 @@
 @│                ( )3     ( )4 ( )5   ( )6                                    │
 @│            ( )7   ( )8                                                      │
 @└─────────────────────────────────────────────────────────────────────────────┘
+.balign 4
+.data
+arrayBuffer: .SKIP 13*4
+
 .section	.rodata
 testData:
     .word 15
@@ -32,9 +36,12 @@ testData:
     .word 23
 testDataSz:
     .word 13
-arrayBuffer: .SKIP 13*4
 sNodeHeight: .asciz "Node height: %d\n"
 sNodeWeight: .asciz "Node Weight: %d\n"
+sNodeValue:  .asciz "Node%d's value is '%d'\n"
+sLRNode5:    .asciz "Left rotate Node5.\n"
+sRRNode5:    .asciz "Right rotate Node5.\n"
+sInOrder:    .asciz "Inorder traversal:\n"
 .ALIGN 4
 .TEXT
 
@@ -64,6 +71,10 @@ main:
     BL testNodeHeight
 
     BL testNodeWeight
+
+    BL testLeftRotate
+
+    BL testRightRotate
 .Lend:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
@@ -224,7 +235,7 @@ testNodeHeight:
 testNodeWeight:
     STMFD sp!, {fp,lr}           @ Keep the stack 8byte aligned
     MOV fp, sp                   @ l,r,d,h
-    SUB sp, #48                  @ Make room on the stack for 3 nodes
+    SUB sp, #NODE_SIZE*3         @ Make room on the stack for 3 nodes. 48
                                  @
     @ Build the nodes on the stack
         @┍━━━━━━━┑                     │       │
@@ -269,5 +280,242 @@ testNodeWeight:
 .LtestNodeWeight_end:
  @─────────────────────────────────────────────────
     LDMFD sp!, {fp,lr}
+    BX lr
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ testLeftRotate()                                │
+@└─────────────────────────────────────────────────┘  
+.FUNC testLeftRotate
+testLeftRotate:
+    STMFD sp!, {r4,r5,fp,lr}     @ Keep the stack 8byte aligned
+    MOV fp, sp                   @ l,r,d,h
+    SUB sp, #NODE_SIZE*5         @ Make room on the stack for 5 nodes
+                                 @
+    @ Build the nodes on the stack
+        @┍━━━━━━━┑                     │       │
+        @│ Stack │                     │ Node4 │
+        @├───────┤<- sp                ├───────┤
+        @│  LR   │                     │ Node5 │
+        @├───────┤<- sp-4              ├───────┤
+        @│  FP   │                     │       │
+        @├───────┤<- sp-8   ^sp+40     ├───────┤
+        @│ Node1 │                     │       │
+        @├───────┤<- sp-24  ^sp+24     ├───────┤
+        @│ Node2 │                     │       │
+        @├───────┤<- sp-40  ^sp+18     ├───────┤
+        @│ Node3 │                     │       │
+        @├───────┤<- sp-56  ^sp+8      ├───────┤
+        @│       │                     │       │
+    @ Tree structure should look like
+    @
+    @           N5            LR     N4
+    @         /    \               /    \
+    @        N3    N4             N5    N1
+    @             /  \           /  \
+    @            N2   N1        N3  N2
+    @
+
+    MOV r0, sp                   @ Get a ptr to Node5
+    MOV r2, #2
+    STR r2, [r0, #NODE_HEIGHT]   @ Set Node5's height
+    MOV r2, #5
+    STR r2, [r0, #NODE_DATA]     @ Set Node5's data to 5
+    ADD r1, sp,  #NODE_SIZE      @ Get the location of Node4
+    STR r1, [r0, #NODE_RIGHT]    @ Store the address of Node4 as right node of Node5
+
+    MOV r2, #1                   @ Set the height for Node4
+    STR r2, [r1, #NODE_HEIGHT]   @ Store the height into Node4's height
+    MOV r2, #4
+    STR r2, [r1, #NODE_DATA]     @ Set Node4's data to 4
+    ADD r2, sp,  #NODE_SIZE*3    @ Get the Address of Node2
+    STR r2, [r1, #NODE_LEFT]     @ Store it as the left node of Node4
+    MOV r3, #NULL
+    STR r3, [r2, #NODE_LEFT]     @ Make Node2's left and right node's null
+    STR r3, [r2, #NODE_RIGHT]
+    STR r3, [r2, #NODE_HEIGHT]   @ Set Node2's height to 0
+    MOV r3, #2
+    STR r3, [r2, #NODE_DATA]     @ Set Node2's data to 2
+
+    ADD r2, sp,  #NODE_SIZE*4    @ Get the Address of Node1
+    STR r2, [r1, #NODE_RIGHT]    @ Store it as the right node of Node4
+    MOV r3, #NULL
+    STR r3, [r2, #NODE_LEFT]     @ Make Node1's left and right node's null
+    STR r3, [r2, #NODE_RIGHT]
+    STR r3, [r2, #NODE_HEIGHT]   @ Set Node1's height to 0
+    MOV r3, #1                   @ Set Node1's data to 1
+    STR r3, [r2, #NODE_DATA]
+
+    ADD r1, r1,  #NODE_SIZE      @ Get the address of Node3
+    STR r1, [r0, #NODE_LEFT]     @ Set Node5's left node to Node3
+    MOV r2, #NULL                @ Set height for Node3
+    STR r2, [r1, #NODE_HEIGHT]   @ Store the height of Node3
+    STR r2, [r1, #NODE_LEFT]     @ Make sure Node3's left and right children are null
+    STR r2, [r1, #NODE_RIGHT]
+    MOV r2, #3                   @ Set Node3's data to 3
+    STR r2, [r1, #NODE_DATA]
+
+    BL avlTree_nodeHeight        @ Test to see if we can get Node5's height
+    MOV r1, r0
+    LDR r0, =sNodeHeight
+    BL printf
+    
+    LDR r0, [sp, #NODE_RIGHT]    @ Test to see if we can get Node4's height
+    BL avlTree_nodeHeight
+    MOV r1, r0
+    LDR r0, =sNodeHeight
+    BL printf
+    
+    MOV r1, sp                   @ Get Node5
+    LDR r1, [r1, #NODE_DATA]
+    LDR r0, =sLRNode5
+    BL printf
+
+    MOV r0, sp                   @ Get Node5
+    BL avlTree_leftRotate        @ Left Rotate node5
+    MOV r4, r0                   @ Node4 should be the new root. Tmp store Node4
+    LDR r2, [r4, #NODE_DATA]     @ r0 should be Node4 now.
+    LDR r0, =sNodeValue          
+    MOV r1, #4
+    BL printf
+
+    LDR r0, [r4, #NODE_RIGHT]    @ Get Node4's right node, Node1
+    LDR r2, [r0, #NODE_DATA]     @ r0 should be Node1 now.
+    MOV r1, r2
+    LDR r0, =sNodeValue
+    BL printf
+
+    LDR r0, [r4, #NODE_LEFT]     @ Get Node4's left node, Node5
+    LDR r2, [r0, #NODE_DATA]     @ r0 should be Node5 now.
+    MOV r1, r2
+    LDR r0, =sNodeValue
+    BL printf
+    
+    MOV r0, r4
+    LDR r1, =arrayBuffer
+    MOV r2, #5
+    MOV r3, #0
+    BL avlTree_minSort
+
+    LDR r0, =arrayBuffer
+    MOV r1, #5
+    BL array_print
+
+    MOV sp, fp
+.LendOf_testLeftRotate:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r4,r5,fp,lr}
+    BX lr
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ testRightRotate()                               │
+@└─────────────────────────────────────────────────┘  
+.FUNC testRightRotate
+testRightRotate:
+    STMFD sp!, {r4,r5,fp,lr}     @ Keep the stack 8byte aligned
+    MOV fp, sp
+    SUB sp, #NODE_SIZE*5         @ Make room on the stack for 5 nodes
+                                 @
+    @ Build the nodes on the stack
+        @┍━━━━━━━┑                     │       │
+        @│ Stack │                     │ Node4 │
+        @├───────┤<- sp                ├───────┤
+        @│  LR   │                     │ Node5 │
+        @├───────┤<- sp-4              ├───────┤
+        @│  FP   │                     │       │
+        @├───────┤<- sp-8   ^sp+40     ├───────┤
+        @│ Node1 │                     │       │
+        @├───────┤<- sp-24  ^sp+24     ├───────┤
+        @│ Node2 │                     │       │
+        @├───────┤<- sp-40  ^sp+18     ├───────┤
+        @│ Node3 │                     │       │
+        @├───────┤<- sp-56  ^sp+8      ├───────┤
+        @│       │                     │       │
+    @ Tree structure should look like
+    @
+    @           N5        RR         N5
+    @         /    \               /    \
+    @        N3    N4             N2     N3
+    @       /  \                        /  \
+    @      N2   N1                     N1  N4
+    @
+
+    MOV r0, sp                   @ Get a ptr to Node5
+    MOV r2, #2
+    STR r2, [r0, #NODE_HEIGHT]   @ Set Node5's height
+    MOV r2, #5
+    STR r2, [r0, #NODE_DATA]     @ Set Node5's data to 5
+    ADD r1, sp,  #NODE_SIZE      @ Get the location of Node4
+    STR r1, [r0, #NODE_RIGHT]    @ Store the address of Node4 as right node of Node5
+
+    MOV r2, #0                   @ Set the height for Node4
+    STR r2, [r1, #NODE_HEIGHT]   @ Store the height into Node4's height
+    MOV r2, #4
+    STR r2, [r1, #NODE_DATA]     @ Set Node4's data to 4
+    MOV r2, #NULL
+    STR r2, [r1, #NODE_LEFT]     @ Make Node4's left and right node's null
+    STR r2, [r1, #NODE_RIGHT]
+
+    ADD r1, sp,  #NODE_SIZE*2    @ Get the Address of Node3
+    MOV r2, #3
+    STR r2, [r1, #NODE_DATA]     @ Set Node3's data to 3
+    STR r1, [r0, #NODE_LEFT]     @ Store Node3 as the left node of Node5
+
+    ADD r0, sp,  #NODE_SIZE*3    @ Get the Address of Node2
+    STR r0, [r1, #NODE_LEFT]     @ Store Node2 as the left node of Node3
+    MOV r2, #2
+    STR r2, [r0, #NODE_DATA]
+    MOV r2, #NULL
+    STR r2, [r0, #NODE_LEFT]     @ Make Node2's left and right node's null
+    STR r2, [r0, #NODE_RIGHT]
+    STR r2, [r0, #NODE_HEIGHT]   @ Set Node2's height to 0
+
+    ADD r0, sp,  #NODE_SIZE*4    @ Get the Address of Node1
+    STR r0, [r1, #NODE_RIGHT]    @ Store it as the right node of Node3
+    MOV r2, #NULL
+    STR r2, [r0, #NODE_LEFT]     @ Make Node1's left and right node's null
+    STR r2, [r0, #NODE_RIGHT]
+    STR r2, [r0, #NODE_HEIGHT]   @ Set Node1's height to 0
+    MOV r2, #1                   @ Set Node1's data to 1
+    STR r2, [r0, #NODE_DATA]
+
+    LDR r0, =sInOrder
+    BL  printf
+
+    MOV r0, sp                   @ Inorder traversal of this new tree before rotation
+    LDR r1, =arrayBuffer
+    MOV r2, #5
+    MOV r3, #0
+    BL avlTree_minSort
+
+    LDR r0, =arrayBuffer
+    MOV r1, #5
+    BL array_print
+
+    LDR r0, =sRRNode5
+    BL  printf
+
+    MOV r0, sp                   @ Get Node5
+    BL avlTree_rightRotate       @ Right Rotate node5
+    MOV r4, r0                   @ Node4 should be the new root. Tmp store Node4
+
+    LDR r0, =sInOrder
+    BL  printf
+                                 @ Inorder traversal after rotation.
+    MOV r0, r4                   @ Node4 should be the new root. Tmp store Node4
+    LDR r1, =arrayBuffer
+    MOV r2, #5
+    MOV r3, #0
+    BL avlTree_minSort
+
+    LDR r0, =arrayBuffer
+    MOV r1, #5
+    BL array_print
+
+    MOV sp, fp
+.LendOf_testRightRotate:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r4,r5,fp,lr}
     BX lr
 .ENDFUNC

@@ -20,22 +20,22 @@ NODE_HEIGHT=12
 NODE_SIZE=16
 NULL=0
 
+@###################################################
+@                 MACROS                           #
+@###################################################
 .MACRO MAX $p0, $p1, $p2
     CMP   \$p1, \$p2
     MOVLE \$p0, \$p2
     MOVGT \$p0, \$p1
 .ENDM
 
-@ int v;           // we want to find the absolute value of v
-@ unsigned int r;  // the result goes here 
-@                            4            8
-@ int const mask = v >> sizeof(int) * CHAR_BIT - 1;
-@ r = (v + mask) ^ mask;
-.MACRO ABS $p0, $p1
-    MOV   \$p0, \$p1, ASR #31
-    ADD   \$p1, \$p1, \$p0
-    EOR   \$p0, \$p0, \$p1
-.ENDM
+.MACRO ABS $p0, $p1                          @ http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs
+    MOV   \$p0, \$p1, ASR #31                @ int v;           // we want to find the absolute value of v
+    ADD   \$p1, \$p1, \$p0                   @ unsigned int r;  // the result goes here 
+    EOR   \$p0, \$p0, \$p1                   @                            4            8
+.ENDM                                        @ int const mask = v >> sizeof(int) * CHAR_BIT - 1;
+                                             @ r = (v + mask) ^ mask;                                        
+@##################################################
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ node_create()                                   │
@@ -105,6 +105,7 @@ avlTree_nodeHeight:
     LDRNE r2, [r2, #NODE_HEIGHT]
                                    @ Max( leftH, rightH )
     MAX r0, r1, r2
+    ADD r0, r0, #1
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {fp,pc}
 .ENDFUNC
@@ -118,7 +119,6 @@ avlTree_nodeHeight:
 .FUNC avlTree_nodeWeight
 avlTree_nodeWeight:
     STMFD sp!, {r4,lr}
-    
                                    @ leftH = node.left ? node.left.height : -1
     LDR   r1, [r0, #NODE_LEFT]     @   
     CMP   r1, #NULL
@@ -139,28 +139,78 @@ avlTree_nodeWeight:
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ avlTree_leftRotate()                            │
+@│ You do a left rotate when the node is 'heavy'   │
+@│ on the right                                    │
+@│                                                 │
+@│         (x)        Left Rotate x        (y)     │     
+@│        /   \                           /    \   │ 
+@│     /A\     (y)                      (x)     /C\│
+@│            /    \                   /   \       │    
+@│          /B\    /C\                /A\  /B\     │   
+@│     AxByC                =          AxByC       │
+@│                                                 │
 @│ param(r0): Node to do the left rotate around.   │
-@│ return: A node.                                 │
+@│ return: A node. The new root node.              │
 @└─────────────────────────────────────────────────┘  
+.GLOBAL avlTree_leftRotate
 .FUNC avlTree_leftRotate
 avlTree_leftRotate:
-    STMFD sp!, {r4-r5,lr}
+    STMFD sp!, {r4,lr}
+                                       @ nodeX = r0
+    LDR r1, [r0, #NODE_RIGHT]          @ nodeY = r1 = nodeX.right
     
+    CMP r1, #NULL                      @ if( nodeY == null ) return nodeX
+    BEQ .LendOf_avlTree_leftRotate
+
+    LDR r2, [r1, #NODE_LEFT]           @ nodeX.right = nodeY.left
+    STR r2, [r0, #NODE_RIGHT]
+
+    STR r0, [r1, #NODE_LEFT]           @ nodeY.left = nodeX
+
+    LDR r2, [r0, #NODE_HEIGHT]         @ nodeX.height--
+    SUB r2, r2, #1
+    STR r2, [r0, #NODE_HEIGHT]
+
+    MOV r0, r1                         @ nodeY.height = nodeHeight(nodeY)
+    MOV r4, r1                         @ store it temp. for function call
+    BL avlTree_nodeHeight
+    STR r0, [r4, #NODE_HEIGHT]
+
+    MOV r0, r4                         @ return nodeY
+
+    .LendOf_avlTree_leftRotate:
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4-r5,pc}
+    LDMFD sp!, {r4,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ avlTree_rightRotate()                           │
 @│ param(r0): Node to do the right rotate around.  │
 @│ return: A node.                                 │
+@ TODO:
 @└─────────────────────────────────────────────────┘  
+.GLOBAL avlTree_rightRotate
 .FUNC avlTree_rightRotate
 avlTree_rightRotate:
-    STMFD sp!, {r4-r5,lr}
+    STMFD sp!, {r4,lr}
     
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4-r5,pc}
+    LDMFD sp!, {r4,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ avlTree_avlTree_balance()                       │
+@│ param(r0): Node to do the right rotate around.  │
+@│ return: A node.                                 │
+@ TODO:
+@└─────────────────────────────────────────────────┘  
+.GLOBAL avlTree_balance
+.FUNC avlTree_balance
+avlTree_balance:
+    STMFD sp!, {r4,lr}
+    
+@ ─────────────────────────────────────────────────
+    LDMFD sp!, {r4,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
