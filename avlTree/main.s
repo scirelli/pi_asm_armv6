@@ -42,6 +42,9 @@ sNodeValue:  .asciz "Node%d's value is '%d'\n"
 sLRNode5:    .asciz "Left rotate Node5.\n"
 sRRNode5:    .asciz "Right rotate Node5.\n"
 sInOrder:    .asciz "Inorder traversal:\n"
+sRtnChar:    .asciz "\n\r"
+sTestLR:     .asciz "testLeftRotate()\n"
+sTestRR:     .asciz "testRightRotate()\n"
 .ALIGN 4
 .TEXT
 
@@ -72,8 +75,17 @@ main:
 
     BL testNodeWeight
 
+    LDR r0, =sRtnChar
+    BL printf
+    LDR r0, =sTestLR
+    BL printf
     BL testLeftRotate
 
+    LDR r0, =sRtnChar
+    BL printf
+
+    LDR r0, =sTestRR
+    BL printf
     BL testRightRotate
 .Lend:
  @─────────────────────────────────────────────────
@@ -434,12 +446,12 @@ testRightRotate:
         @│       │                     │       │
     @ Tree structure should look like
     @
-    @           N5        RR         N5
+    @           N5        RR         N3
     @         /    \               /    \
-    @        N3    N4             N2     N3
+    @        N3    N4             N2     N5
     @       /  \                        /  \
     @      N2   N1                     N1  N4
-    @
+    @ 2,3,1,5,4
 
     MOV r0, sp                   @ Get a ptr to Node5
     MOV r2, #2

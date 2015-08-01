@@ -178,22 +178,47 @@ avlTree_leftRotate:
 
     MOV r0, r4                         @ return nodeY
 
-    .LendOf_avlTree_leftRotate:
+.LendOf_avlTree_leftRotate:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ avlTree_rightRotate()                           │
+@│ You do a right rotate when the node is 'heavy'  │
+@│ on the left.                                    │
+@│                                                 │ 
+@│      (x)       Right rotate x       (y)         │
+@│     /    \                         /   \        │
+@│  (y)     /C\                   /A\     (x)      │ 
+@│  /   \                                /    \    │
+@│ /A\  /B\                            /B\    /C\  │
+@│   AyBxC             =          AyBxC            │
+@│ In order traversal is still the same            │
 @│ param(r0): Node to do the right rotate around.  │
-@│ return: A node.                                 │
-@ TODO:
+@│ return: A node. The new root node               │
 @└─────────────────────────────────────────────────┘  
 .GLOBAL avlTree_rightRotate
 .FUNC avlTree_rightRotate
 avlTree_rightRotate:
     STMFD sp!, {r4,lr}
+                                @ nodeX = r0
+    LDR r1, [r0, #NODE_LEFT]    @ r1 = nodeY = nodeX.left;
+    LDR r2, [r1, #NODE_RIGHT]   @ nodeX.left = nodeY.right;
+    STR r2, [r0, #NODE_LEFT]
+
+    STR r0, [r1, #NODE_RIGHT]   @ nodeY.right = nodeX;
+
+    LDR r2, [r0, #NODE_HEIGHT]  @ nodeX.height--;
+    SUB r2, r2,  #1
+    STR r2, [r0, #NODE_HEIGHT]
     
+    MOV r4, r1                  @ store it temp.
+    MOV r0, r1                  @ nodeY.height = nodeHeight(nodeY);
+    BL avlTree_nodeHeight
+    STR r0, [r4, #NODE_HEIGHT]
+
+    MOV r0, r4                  @ return nodeY;
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
 .ENDFUNC
