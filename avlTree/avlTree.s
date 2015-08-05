@@ -201,7 +201,7 @@ avlTree_leftRotate:
 .GLOBAL avlTree_rightRotate
 .FUNC avlTree_rightRotate
 avlTree_rightRotate:
-    STMFD sp!, {r4,lr}
+    STMFD sp!, {r4-r6,lr}
                                 @ nodeX = r0
     LDR r1, [r0, #NODE_LEFT]    @ r1 = nodeY = nodeX.left;
     LDR r2, [r1, #NODE_RIGHT]   @ nodeX.left = nodeY.right;
@@ -209,18 +209,22 @@ avlTree_rightRotate:
 
     STR r0, [r1, #NODE_RIGHT]   @ nodeY.right = nodeX;
 
-    LDR r2, [r0, #NODE_HEIGHT]  @ nodeX.height--;
-    SUB r2, r2,  #1
-    STR r2, [r0, #NODE_HEIGHT]
-    
-    MOV r4, r1                  @ store it temp.
-    MOV r0, r1                  @ nodeY.height = nodeHeight(nodeY);
-    BL avlTree_nodeHeight
+    MOV r4, r0
+    MOV r5, r1
+    BL avlTree_nodeHeight       @ nodeX.height = nodeHeight(nodeX)
     STR r0, [r4, #NODE_HEIGHT]
 
-    MOV r0, r4                  @ return nodeY;
+    @ LDR r2, [r0, #NODE_HEIGHT]  @ nodeX.height--;
+    @ SUB r2, r2,  #1
+    @ STR r2, [r0, #NODE_HEIGHT]
+    
+    MOV r0, r5                  @ nodeY.height = nodeHeight(nodeY);
+    BL avlTree_nodeHeight
+    STR r0, [r5, #NODE_HEIGHT]
+
+    MOV r0, r5                  @ return nodeY;
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4,pc}
+    LDMFD sp!, {r4-r6,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -239,24 +243,24 @@ avlTree_balance:
    ABS r1, r0                                           @ r1 = abs(weight)
 
    CMP r1, #1
-   BHI if_abs_weight_gt_1
-   BAL endOf_avlTree_balance_rtn_null
-   if_abs_weight_gt_1:                                  @ if( Math.asb(weight)  > 1 ){//unblanced
+   BHI .Lif_abs_weight_gt_1
+   BAL .LendOf_avlTree_balance_rtn_null
+   .Lif_abs_weight_gt_1:                                @ if( Math.asb(weight)  > 1 ){//unblanced
        CMP r0, #1                    
-       BGT if_node_is_left_heavy                        @     if( weight > 1 ){//node is left heavy
-       BAL else_node_is_right_heavy
-       if_node_is_left_heavy:
+       BGT .Lif_node_is_left_heavy                      @     if( weight > 1 ){//node is left heavy
+       BAL .Lelse_node_is_right_heavy
+       .Lif_node_is_left_heavy:
            LDR r0, [r4, #NODE_LEFT]                     @         weight = nodeWeight(node.left);
            BL avlTree_nodeWeight                                         
 
            CMP r0, #0                                   @         if( weight >= 0 ){//node's left child is left heavy or balanced
-           BGE if_left_child_left_heavy_or_balanced 
-           BAL else_left_child_right_heavy
-           if_left_child_left_heavy_or_balanced:
+           BGE .Lif_left_child_left_heavy_or_balanced 
+           BAL .Lelse_left_child_right_heavy
+           .Lif_left_child_left_heavy_or_balanced:
                MOV r0,r4
                BL avlTree_rightRotate                   @             return rightRotate(node);
-               BAL endOf_avlTree_balance_rtn_val        @
-           else_left_child_right_heavy:                 @         }else if( weight < 0 ){//node's left child is right heavy
+               BAL .LendOf_avlTree_balance_rtn_val      @
+           .Lelse_left_child_right_heavy:               @         }else if( weight < 0 ){//node's left child is right heavy
                MOV r0, r4                               @             node.left = leftRotate( node.left );
                LDR r0, [r0, #NODE_LEFT]
                BL avlTree_leftRotate
@@ -265,32 +269,32 @@ avlTree_balance:
                STR r1, [r0, #NODE_LEFT]
                
                BL avlTree_rightRotate                   @             return rightRotate( node  );
-           BAL endOf_avlTree_balance_rtn_val
-       BAL endOf_avlTree_balance_rtn_null               @         }
-       else_node_is_right_heavy:                        @     }else if( weight < 0 ){//node is right heavy
-       if_node_is_right_heavy:                                 
+           BAL .LendOf_avlTree_balance_rtn_val
+       BAL .LendOf_avlTree_balance_rtn_null             @         }
+       .Lelse_node_is_right_heavy:                      @     }else if( weight < 0 ){//node is right heavy
+       .Lif_node_is_right_heavy:                                 
            LDR r0, [r4, #NODE_RIGHT]                    @         weight = nodeWeight(node.right);
            BL avlTree_nodeWeight
        
            CMP r0, #0                                   @         if( weight >= 0 ){//node's right child is left heavy or balanced
-           BGE if_right_child_left_heavy_or_balanced
-           BAL else_right_child_left_heavy_or_balanced
-           if_right_child_left_heavy_or_balanced:
+           BGE .Lif_right_child_left_heavy_or_balanced
+           BAL .Lelse_right_child_left_heavy_or_balanced
+           .Lif_right_child_left_heavy_or_balanced:
                LDR r0, [r4, #NODE_RIGHT]                @             node.right = rightRotate( node.right );
                BL avlTree_rightRotate
                STR r0, [r4, #NODE_RIGHT]
                MOV r0, r4
                BL avlTree_leftRotate
-               BAL endOf_avlTree_balance_rtn_val        @             return leftRotate( node  );
-           else_right_child_left_heavy_or_balanced:     @         }else if( weight < 0 ){//node's right child is right heavy
+               BAL .LendOf_avlTree_balance_rtn_val      @             return leftRotate( node  );
+           .Lelse_right_child_left_heavy_or_balanced:   @         }else if( weight < 0 ){//node's right child is right heavy
                MOV r0, r4                               @             return leftRotate(node);
                BL avlTree_leftRotate
-               BAL endOf_avlTree_balance_rtn_val        @         }
+               BAL .LendOf_avlTree_balance_rtn_val      @         }
                                                         @     }
                                                         @ }
-   endOf_avlTree_balance_rtn_null:
+   .LendOf_avlTree_balance_rtn_null:
    MOV r0, #NULL                    @ return null;
-   endOf_avlTree_balance_rtn_val:
+   .LendOf_avlTree_balance_rtn_val:
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
 .ENDFUNC
@@ -305,8 +309,34 @@ avlTree_balance:
 .FUNC avlTree_insert
 avlTree_insert:
     STMFD sp!, {r4,lr}
-    
-.LendOf_insert_rtn_null:
+   
+                                @ var newChild = null;
+                                @ if( value <= node.value ){
+                                @     if( !node.left ){
+                                @         node.left = new Node(value);
+                                @         node.height = nodeHeight(node);
+                                @     }else{
+                                @         newChild = insert( node.left, value );
+                                @         if( newChild ){
+                                @             node.left = newChild;
+                                @         }
+                                @         newChild = balance(node);
+                                @         node.height = nodeHeight(node)//don't think i need this anymore;
+                                @     }
+                                @ }else if( value >= node.value ){
+                                @     if( !node.right ){
+                                @         node.right = new Node(value);
+                                @         node.height = nodeHeight(node);
+                                @     }else{
+                                @         newChild = insert(node.right, value);
+                                @         if( newChild ){
+                                @             node.right = newChild;
+                                @         }
+                                @         newChild = balance(node);
+                                @         node.height = nodeHeight(node); //don't think i need this anymore
+                                @     }
+                                @ }
+                                @ return newChild;LendOf_insert_rtn_null:
     MOV r0, #NULL
 @ ─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
