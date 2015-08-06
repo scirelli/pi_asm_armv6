@@ -303,43 +303,81 @@ avlTree_balance:
 @│ avlTree_insert()                                │
 @│ param(r0): rootNode to insert to.               │
 @│ param(r1): The data to insert.                  │
-@│ return: A pointer to the new node.              │
+@│ return: null or a new root node if balance      │
+@│ causes a new root to be created.                │
 @└─────────────────────────────────────────────────┘  
 .GLOBAL avlTree_insert
 .FUNC avlTree_insert
 avlTree_insert:
-    STMFD sp!, {r4,lr}
+    STMFD sp!, {r4,r5,lr}
    
-                                @ var newChild = null;
-                                @ if( value <= node.value ){
-                                @     if( !node.left ){
-                                @         node.left = new Node(value);
-                                @         node.height = nodeHeight(node);
-                                @     }else{
-                                @         newChild = insert( node.left, value );
-                                @         if( newChild ){
-                                @             node.left = newChild;
-                                @         }
-                                @         newChild = balance(node);
-                                @         node.height = nodeHeight(node)//don't think i need this anymore;
-                                @     }
-                                @ }else if( value >= node.value ){
-                                @     if( !node.right ){
-                                @         node.right = new Node(value);
-                                @         node.height = nodeHeight(node);
-                                @     }else{
-                                @         newChild = insert(node.right, value);
-                                @         if( newChild ){
-                                @             node.right = newChild;
-                                @         }
-                                @         newChild = balance(node);
-                                @         node.height = nodeHeight(node); //don't think i need this anymore
-                                @     }
-                                @ }
-                                @ return newChild;LendOf_insert_rtn_null:
+                                            @ var newChild = null;
+    LDR r2, [r0, #NODE_DATA]                @ if( value <= node.value ){
+    CMP r1, r2
+    BLE .Lif_val_LE_nodeval
+    BAL .Lelse_if_val_HI_nodeval
+    .Lif_val_LE_nodeval:
+        LDR r2, [r0, #NODE_LEFT]            @     if( !node.left ){
+        CMP r2, #NULL 
+        BNE .Lif_left_not_null
+        BAL .Lelse_left_is_null
+        .Lif_left_not_null:
+            MOV r4, r0
+            MOV r0, r1
+            BL node_createWithValue         @         node.left = new Node(value);
+            STR r0, [r4, #NODE_LEFT]
+            MOV r0, r4                      @         node.height = nodeHeight(node);
+            BL avlTree_nodeHeight
+            STR r0, [r4, #NODE_HEIGHT]
+        BAL .LendOf_insert_rtn_null         @         return null;
+        .Lelse_left_is_null:                @     }else{
+            MOV r4, r0
+            LDR r0, [r0, #NODE_LEFT]
+            BAL avlTree_insert              @         newChild = insert( node.left, value );
+            CMP r0, #NULL                   @         if( newChild ){
+            STRNE r0, [r4, #NODE_LEFT]      @             node.left = newChild;
+                                            @         }
+            MOV r0, r4
+            BL avlTree_balance              @         newChild = balance(node);
+            MOV r5, r0
+            MOV r0, r4
+            BL avlTree_nodeHeight           @         node.height = nodeHeight(node)//don't think i need this anymore;
+            STR r0, [r4, #NODE_HEIGHT]
+            MOV r0, r5                      @         return newChild;
+        BAL .LendOf_insert                  @     }
+      .Lelse_if_val_HI_nodeval:             @ }else if( value > node.value ){
+            MOV r4, r0
+            LDR r0, [r0, #NODE_RIGHT]       @     if( !node.right ){
+            CMP r0, #NULL
+            BEQ .Lelse_nodeRight_is_null
+                MOV r0, r1
+                BL node_createWithValue     @         node.right = new Node(value);
+                STR r0, [r4, #NODE_RIGHT]
+                MOV r0, r4                  @         node.height = nodeHeight(node);
+                BL avlTree_nodeHeight
+                STR r0, [r4, #NODE_HEIGHT]
+           BAL .LendOf_insert_rtn_null     
+           .Lelse_nodeRight_is_null         @     }else{
+               MOV r4, r0                   @         newChild = insert(node.right, value);
+               LDR r0, [r0, #NODE_RIGHT]
+               CMP r0, #NULL                @         if( newChild ){
+               STRNE r0, [r4, #NODE_RIGHT]  @             node.right = newChild;
+                                            @         }
+               MOV r0, r4                   @         newChild = balance(node);
+               BL avlTree_balance
+               MOV r5, r0                   @         node.height = nodeHeight(node); //don't think i need this anymore
+               MOV r0, r4
+               BL avlTree_nodeHeight
+               STR r0, [r4, #NODE_HEIGHT]
+               MOV r0, r5
+                                            @     }
+                                            @ }
+    BAL .LendOf_insert                      @ return newChild;
+    .LendOf_insert_rtn_null:
     MOV r0, #NULL
+    .LendOf_insert:
 @ ─────────────────────────────────────────────────
-    LDMFD sp!, {r4,pc}
+    LDMFD sp!, {r4,r5,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
