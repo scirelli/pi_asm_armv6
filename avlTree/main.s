@@ -46,6 +46,7 @@ sRtnChar:    .asciz "\n\r"
 sTestLR:     .asciz "testLeftRotate()\n"
 sTestRR:     .asciz "testRightRotate()\n"
 sTestBal:    .asciz "testBalanceRightRotate()\n"
+sTestBalL:    .asciz "testBalanceLeftRotate()\n"
 sBal:        .asciz "Balance:\n"
 .ALIGN 4
 .TEXT
@@ -90,9 +91,13 @@ main:
     @ BL printf
     @ BL testRightRotate
 
-    LDR r0, =sTestBal
+    @LDR r0, =sTestBal
+    @BL printf
+    @BL testBalanceRightRotate
+
+    LDR r0, =sTestBalL
     BL printf
-    BL testBalanceRightRotate
+    BL testBalanceLeftRotate
 .Lend:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
@@ -614,26 +619,26 @@ testBalanceRightRotate:
     MOV r2, #1                   @ Set Node1's data to 1
     STR r2, [r0, #NODE_DATA]
 
-    @ ADD r0, sp,  #NODE_SIZE*5    @ Get the Address of Node0
-    @ ADD r1, sp,  #NODE_SIZE*3    @ Get the Address of Node0
-    @ STR r0, [r1, #NODE_LEFT]     @ Store it as the left node of Node2
-    @ MOV r2, #NULL
-    @ STR r2, [r0, #NODE_LEFT]     @ Make Node0's left and right node's null
-    @ STR r2, [r0, #NODE_RIGHT]
-    @ STR r2, [r0, #NODE_HEIGHT]   @ Set Node0's height to 0
-    @ STR r2, [r0, #NODE_DATA]
+    ADD r0, sp,  #NODE_SIZE*5    @ Get the Address of Node0
+    ADD r1, sp,  #NODE_SIZE*3    @ Get the Address of Node0
+    STR r0, [r1, #NODE_LEFT]     @ Store it as the left node of Node2
+    MOV r2, #NULL
+    STR r2, [r0, #NODE_LEFT]     @ Make Node0's left and right node's null
+    STR r2, [r0, #NODE_RIGHT]
+    STR r2, [r0, #NODE_HEIGHT]   @ Set Node0's height to 0
+    STR r2, [r0, #NODE_DATA]
 
     LDR r0, =sInOrder
     BL  printf
 
     MOV r0, sp                   @ Inorder traversal of this new tree before rotation
     LDR r1, =arrayBuffer
-    MOV r2, #5
+    MOV r2, #6
     MOV r3, #0
     BL avlTree_minSort
 
     LDR r0, =arrayBuffer
-    MOV r1, #5
+    MOV r1, #6
     BL array_print
 
     LDR r0, =sBal
@@ -648,16 +653,139 @@ testBalanceRightRotate:
                                  @ Inorder traversal after rotation.
     MOV r0, r4                   @ Node4 should be the new root. Tmp store Node4
     LDR r1, =arrayBuffer
-    MOV r2, #5
+    MOV r2, #6
     MOV r3, #0
     BL avlTree_minSort
 
     LDR r0, =arrayBuffer
-    MOV r1, #5
+    MOV r1, #6
     BL array_print
 
     MOV sp, fp
 .LendOf_testBalanceRightRotate:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r4,r5,fp,lr}
+    BX lr
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ testBalanceLeftRotate()                         │
+@└─────────────────────────────────────────────────┘  
+.FUNC testBalanceLeftRotate
+testBalanceLeftRotate:
+    STMFD sp!, {r4,r5,fp,lr}     @ Keep the stack 8byte aligned
+    MOV fp, sp
+    SUB sp, #NODE_SIZE*6         @ Make room on the stack for 5 nodes
+                                 @
+    @ Build the nodes on the stack
+        @┍━━━━━━━┑                     │       │
+        @│ Stack │                     │ Node3 │
+        @├───────┤<- sp                ├───────┤
+        @│  LR   │                     │ Node4 │
+        @├───────┤<- sp-4              ├───────┤
+        @│  FP   │                     │ Node5 │
+        @├───────┤<- sp-8   ^sp+40     ├───────┤
+        @│ Node0 │                     │       │
+        @├───────┤<- sp-24  ^sp+24     ├───────┤
+        @│ Node1 │                     │       │
+        @├───────┤<- sp-40  ^sp+18     ├───────┤
+        @│ Node2 │                     │       │
+        @├───────┤<- sp-56  ^sp+8      ├───────┤
+        @│       │                     │       │
+    @ Tree structure should look like
+    @
+    @           N5        LR         N4
+    @          /  \                 /  \
+    @        N3    N4             N5    N1
+    @             /  \           /  \     \
+    @            N2   N1        N3  N2     N0
+    @                  \                   
+    @                   N0
+    @ 3,5,2,4,1,0
+
+    MOV r0, sp                   @ Get a ptr to Node5
+    MOV r2, #3
+    STR r2, [r0, #NODE_HEIGHT]   @ Set Node5's height
+    MOV r2, #5
+    STR r2, [r0, #NODE_DATA]     @ Set Node5's data to 5
+
+    ADD r1, sp,  #NODE_SIZE*2    @ Get the Address of Node3
+    MOV r2, #3
+    STR r2, [r1, #NODE_DATA]     @ Set Node3's data to 3
+    STR r1, [r0, #NODE_LEFT]     @ Store Node3 as the left node of Node5
+    MOV r2, #NULL
+    STR r2, [r1, #NODE_HEIGHT]   @ Set Node3's height
+    STR r2, [r1, #NODE_LEFT]     @ Make Node4's left and right node's null
+    STR r2, [r1, #NODE_RIGHT]
+
+    ADD r1, sp,  #NODE_SIZE      @ Get the location of Node4
+    STR r1, [r0, #NODE_RIGHT]    @ Store the address of Node4 as right node of Node5
+    MOV r2, #4
+    STR r2, [r1, #NODE_DATA]     @ Set Node4's data to 4
+    MOV r2, #2
+    STR r2, [r1, #NODE_HEIGHT]   @ Store the height into Node4's height
+
+    ADD r0, sp,  #NODE_SIZE*3    @ Get the Address of Node2
+    STR r0, [r1, #NODE_LEFT]     @ Store Node2 as the left node of Node4
+    MOV r2, #2
+    STR r2, [r0, #NODE_DATA]
+    MOV r2, #NULL
+    STR r2, [r0, #NODE_HEIGHT]   @ Set Node2's height to 0
+    STR r2, [r0, #NODE_LEFT]     @ Make Node2's left and right node's null
+    STR r2, [r0, #NODE_RIGHT]
+
+    ADD r0, sp,  #NODE_SIZE*4    @ Get the Address of Node1
+    STR r0, [r1, #NODE_RIGHT]    @ Store it as the right node of Node4
+    MOV r2, #NULL
+    STR r2, [r0, #NODE_LEFT]     @ Make Node1's left and right node's null
+    STR r2, [r0, #NODE_RIGHT]
+    STR r2, [r0, #NODE_HEIGHT]   @ Set Node1's height to 0
+    MOV r2, #1                   @ Set Node1's data to 1
+    STR r2, [r0, #NODE_DATA]
+
+    ADD r1, sp,  #NODE_SIZE*5    @ Get the Address of Node0
+    STR r1, [r0, #NODE_RIGHT]    @ Store it as the left node of Node1
+    MOV r2, #NULL
+    STR r2, [r1, #NODE_LEFT]     @ Make Node0's left and right node's null
+    STR r2, [r1, #NODE_RIGHT]
+    STR r2, [r1, #NODE_HEIGHT]   @ Set Node0's height to 0
+    STR r2, [r1, #NODE_DATA]
+
+    LDR r0, =sInOrder
+    BL  printf
+
+    MOV r0, sp                   @ Inorder traversal of this new tree before rotation
+    LDR r1, =arrayBuffer
+    MOV r2, #6
+    MOV r3, #0
+    BL avlTree_minSort
+
+    LDR r0, =arrayBuffer
+    MOV r1, #6
+    BL array_print
+
+    LDR r0, =sBal
+    BL  printf
+
+    MOV r0, sp                   @ Get Node5
+    BL avlTree_balance           @ Left Rotate node5 using balance function
+    MOV r4, r0                   @ Node4 should be the new root. Tmp store Node4
+
+    LDR r0, =sInOrder
+    BL  printf
+                                 @ Inorder traversal after rotation.
+    MOV r0, r4                   @ Node4 should be the new root. Tmp store Node4
+    LDR r1, =arrayBuffer
+    MOV r2, #6
+    MOV r3, #0
+    BL avlTree_minSort
+
+    LDR r0, =arrayBuffer
+    MOV r1, #6
+    BL array_print
+
+    MOV sp, fp
+.LendOf_testBalanceLeftRotate:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4,r5,fp,lr}
     BX lr
