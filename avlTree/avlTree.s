@@ -323,15 +323,6 @@ avlTree_insert:
         BAL .Lelse_left_is_null
         .Lif_left_not_null:
             MOV r4, r0
-            MOV r0, r1
-            BL node_createWithValue         @         node.left = new Node(value);
-            STR r0, [r4, #NODE_LEFT]
-            MOV r0, r4                      @         node.height = nodeHeight(node);
-            BL avlTree_nodeHeight
-            STR r0, [r4, #NODE_HEIGHT]
-        BAL .LendOf_insert_rtn_null         @         return null;
-        .Lelse_left_is_null:                @     }else{
-            MOV r4, r0
             LDR r0, [r0, #NODE_LEFT]
             BAL avlTree_insert              @         newChild = insert( node.left, value );
             CMP r0, #NULL                   @         if( newChild ){
@@ -345,21 +336,30 @@ avlTree_insert:
             STR r0, [r4, #NODE_HEIGHT]
             MOV r0, r5                      @         return newChild;
         BAL .LendOf_insert                  @     }
+        .Lelse_left_is_null:                @     }else{
+            MOV r4, r0
+            MOV r0, r1
+            BL node_createWithValue         @         node.left = new Node(value);
+            STR r0, [r4, #NODE_LEFT]
+            MOV r0, r4                      @         node.height = nodeHeight(node);
+            BL avlTree_nodeHeight
+            STR r0, [r4, #NODE_HEIGHT]
+        BAL .LendOf_insert_rtn_null         @         return null;
       .Lelse_if_val_HI_nodeval:             @ }else if( value > node.value ){
             MOV r4, r0
             LDR r0, [r0, #NODE_RIGHT]       @     if( !node.right ){
             CMP r0, #NULL
-            BEQ .Lelse_nodeRight_is_null
+            BNE .Lelse_nodeRight_is_not_null
                 MOV r0, r1
                 BL node_createWithValue     @         node.right = new Node(value);
                 STR r0, [r4, #NODE_RIGHT]
                 MOV r0, r4                  @         node.height = nodeHeight(node);
                 BL avlTree_nodeHeight
                 STR r0, [r4, #NODE_HEIGHT]
-           BAL .LendOf_insert_rtn_null     
-           .Lelse_nodeRight_is_null         @     }else{
-               MOV r4, r0                   @         newChild = insert(node.right, value);
-               LDR r0, [r0, #NODE_RIGHT]
+           BAL .LendOf_insert_rtn_null    
+           .Lelse_nodeRight_is_not_null:    @     }else{
+               LDR r0, [r4, #NODE_RIGHT]    @         newChild = insert(node.right, value);
+               BL avlTree_insert
                CMP r0, #NULL                @         if( newChild ){
                STRNE r0, [r4, #NODE_RIGHT]  @             node.right = newChild;
                                             @         }

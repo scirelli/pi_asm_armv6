@@ -17,9 +17,10 @@
 @└─────────────────────────────────────────────────────────────────────────────┘
 .balign 4
 .data
-arrayBuffer: .SKIP 13*4
+arrayBuffer: .SKIP 13*4   @ For printing ints 
 
 .section	.rodata
+arrayBufferSz: .word 13
 testData:
     .word 15
     .word 3 
@@ -46,8 +47,9 @@ sRtnChar:    .asciz "\n\r"
 sTestLR:     .asciz "testLeftRotate()\n"
 sTestRR:     .asciz "testRightRotate()\n"
 sTestBal:    .asciz "testBalanceRightRotate()\n"
-sTestBalL:    .asciz "testBalanceLeftRotate()\n"
+sTestBalL:   .asciz "testBalanceLeftRotate()\n"
 sBal:        .asciz "Balance:\n"
+sTestIns:    .asciz "Test Insert()\n"
 .ALIGN 4
 .TEXT
 
@@ -91,13 +93,17 @@ main:
     @ BL printf
     @ BL testRightRotate
 
-    @LDR r0, =sTestBal
-    @BL printf
-    @BL testBalanceRightRotate
+    @ LDR r0, =sTestBal
+    @ BL printf
+    @ BL testBalanceRightRotate
 
-    LDR r0, =sTestBalL
+    @ LDR r0, =sTestBalL
+    @ BL printf
+    @ BL testBalanceLeftRotate
+
+    LDR r0, =sTestIns
     BL printf
-    BL testBalanceLeftRotate
+    BL testInsertAVL
 .Lend:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
@@ -790,3 +796,65 @@ testBalanceLeftRotate:
     LDMFD sp!, {r4,r5,fp,lr}
     BX lr
 .ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ testInsert()                                    │
+@│  Tree structure should look like
+@│ 15, 3, 7, 1, 7, 0, 8, 5, 44, 16, 34, 67, 23 
+@│
+@│                 23        
+@│             /         \           
+@│           16          67     
+@│          /           /       
+@│         5           34       
+@│    /          \       \                        
+@│   0           8        44      
+@│    \         /  \    
+@│     1       7    15   
+@│      \     /     
+@│       3   7      
+@│             
+@│ 0,1,2,3,5,7,7,8,15,16,23,34,44,67            
+@│             
+@│             
+@└─────────────────────────────────────────────────┘  
+.FUNC testInsertAVL
+testInsertAVL:
+    STMFD sp!, {r4,r5,fp,lr}        @ Keep the stack 8byte aligned
+    MOV fp, sp
+    SUB sp, sp, #NODE_SIZE          @ Make room for root node
+
+    LDR r4, =testData               @ Use the test array to create an avl tree
+    LDR r5, =testDataSz
+    LDR r5, [r5]
+    SUBS r5, r5, #1                 @ Start from the back of the array testDataSz - 1
+
+    MOV r0, sp                      @ Create the root node
+    LDR r1, [r4, r5, LSL #2]
+    STR r1, [r0, #NODE_DATA]
+    MOV r1, #NULL
+    STR r1, [r0, #NODE_RIGHT]
+    STR r1, [r0, #NODE_LEFT]
+    STR r1, [r0, #NODE_HEIGHT]
+
+    BAL .LLoopCheck
+    .LinsertLoop:
+        MOV r0, sp
+        LDR r1, [r4, r5, LSL #2]
+        BL avlTree_insert
+    .LLoopCheck:
+    SUBS r5, r5, #1
+    BPL .LinsertLoop
+    
+    MOV r0, sp 
+    LDR r1, =arrayBuffer
+    LDR r2, =arrayBufferSz
+    MOV r3, #0
+    BL avlTree_minSort
+
+    MOV sp, fp
+.LendOf_testInsertAVL:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r4,r5,fp,lr}
+    BX lr
+.ENDFUNC 
