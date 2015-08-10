@@ -324,7 +324,7 @@ avlTree_insert:
         .Lif_left_not_null:
             MOV r4, r0
             LDR r0, [r0, #NODE_LEFT]
-            BAL avlTree_insert              @         newChild = insert( node.left, value );
+            BL avlTree_insert               @         newChild = insert( node.left, value );
             CMP r0, #NULL                   @         if( newChild ){
             STRNE r0, [r4, #NODE_LEFT]      @             node.left = newChild;
                                             @         }

@@ -820,7 +820,7 @@ testBalanceLeftRotate:
 @└─────────────────────────────────────────────────┘  
 .FUNC testInsertAVL
 testInsertAVL:
-    STMFD sp!, {r4,r5,fp,lr}        @ Keep the stack 8byte aligned
+    STMFD sp!, {r4-r7,fp,lr}        @ Keep the stack 8byte aligned
     MOV fp, sp
     SUB sp, sp, #NODE_SIZE          @ Make room for root node
 
@@ -837,24 +837,32 @@ testInsertAVL:
     STR r1, [r0, #NODE_LEFT]
     STR r1, [r0, #NODE_HEIGHT]
 
+    MOV r6, sp
     BAL .LLoopCheck
     .LinsertLoop:
-        MOV r0, sp
+        MOV r0, r6
         LDR r1, [r4, r5, LSL #2]
         BL avlTree_insert
+        CMP r0, #NULL
+            MOVNE r6, r0
     .LLoopCheck:
     SUBS r5, r5, #1
     BPL .LinsertLoop
     
-    MOV r0, sp 
+    MOV r0, r6
     LDR r1, =arrayBuffer
     LDR r2, =arrayBufferSz
     MOV r3, #0
     BL avlTree_minSort
+    
+
+    LDR r0, =arrayBuffer
+    MOV r1, #13
+    BL array_print
 
     MOV sp, fp
 .LendOf_testInsertAVL:
  @─────────────────────────────────────────────────
-    LDMFD sp!, {r4,r5,fp,lr}
+    LDMFD sp!, {r4-r7,fp,lr}
     BX lr
 .ENDFUNC 
