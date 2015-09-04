@@ -106,3 +106,24 @@ mod:
 LDMFD sp!, {r4,r5,lr}
 BX lr
 .ENDFUNC
+
+@###################################################
+@                 MACROS                           #
+@###################################################
+.MACRO MAX $p0, $p1, $p2
+    CMP   \$p1, \$p2
+    MOVLE \$p0, \$p2
+    MOVGT \$p0, \$p1
+.ENDM
+
+.MACRO ABS $p0, $p1                          @ http://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs
+    MOV   \$p0, \$p1, ASR #31                @ int v;           // we want to find the absolute value of v
+    ADD   \$p1, \$p1, \$p0                   @ unsigned int r;  // the result goes here 
+    EOR   \$p0, \$p0, \$p1                   @                            4            8
+.ENDM                                        @ int const mask = v >> sizeof(int) * CHAR_BIT - 1;
+                                             @ r = (v + mask) ^ mask;                                        
+
+.MACRO ZERO $p0
+    MOV   \$p0, #0
+.ENDM
+@##################################################

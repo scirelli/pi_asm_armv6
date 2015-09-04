@@ -1,15 +1,16 @@
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│                    myarrays.s                                               │
-@│ Playing witih arrays.                                                       │
+@│                    arraysObj.s                                              │
+@│ Array object and methods to work on it.                                     │
 @└─────────────────────────────────────────────────────────────────────────────┘  
 @ array is 10 integers, int is 4 bytes. 4*10
 .DATA
-@arraySz=1024
-@array: .SKIP 4096 
 s_digit: .asciz "%d\n\r"
 s_digit_comma_nl: .asciz "%d,\n\r"
 s_digit_comma: .asciz "%d,"
 RAND_MAX=2147483647
+ARRAY_LENGTH=0
+ARRAY_ELEMENT_SIZE=4
+ARRAY_DATA=8
 
 .TEXT
 .ALIGN 2
@@ -19,36 +20,69 @@ RAND_MAX=2147483647
 @│ param(r0): length of the argv array.            │
 @│ param(r1): array of char*.                      │
 @└─────────────────────────────────────────────────┘  
-@.GLOBAL main
-@.FUNC main
-@main:
-@    STMFD sp!, {r4-r12,lr}
-@
-@    LDR r0, =array
-@    MOV r1, #arraySz
-@    BL array_fill_random
-@
-@    LDR r0, =array
-@    MOV r1, #arraySz
-@    BL array_print
-@end:
+.GLOBAL main
+.FUNC main
+main:
+    STMFD sp!, {r4,lr}
+
+    MOV r0, #4
+    MOV r1, #10
+    BL array_new
+    MOV r4, r0
+    BL array_fill
+    MOV r0, r4
+    BL array_toString
+    MOV r0, r4
+    BL array_fill_random
+    MOV r0, r4
+    BL array_toString
+    MOV r0, r4
+    BL free
+end:
 @ ─────────────────────────────────────────────────
-@    LDMFD sp!, {r4-r12,lr}
-@    BX lr
-@.ENDFUNC
+    LDMFD sp!, {r4,lr}
+    BX lr
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ array_new()                                     │
+@│ Creats a new array.                             │
+@│ param(r0): unsigned int. Element size. Size in  │
+@│ bytes. defaults to 4 bytes if r0 = 0            │
+@│ param(r1): unsigned int. Length of the array.   │
+@│ return: Address of the array object.            │
+@└─────────────────────────────────────────────────┘  
+.GLOBAL array_new
+.FUNC array_new
+array_new:
+    STMFD sp!, {r4-r6,lr}      @ Link and keep stack 8byte aligned.
+    
+    CMP   r0, #0
+    MOVEQ r0, #4
+    MOV   r4, r0
+    MOV   r5, r1
+
+    MOV   r2, #8               @ The structure will be the size of the array plus 4 bytes to store the length and 4 bytes for element size
+    MLAS  r0, r3, r1, r2
+    BL malloc
+    STR r5, [r0, #ARRAY_LENGTH]
+    STR r4, [r0, #ARRAY_ELEMENT_SIZE]
+@ ─────────────────────────────────────────────────
+LDMFD sp!, {r4-r6,pc}          @ Restore the registers and link reg.
+.ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ array_fill()                                    │
 @│ Fills an array will consecutive numbers.        │
 @│ param(r0): Pointer to the the array to fill.    │
-@│ param(r1): Length of the array.                 │
 @│ return: nothing                                 │
 @└─────────────────────────────────────────────────┘  
 .GLOBAL array_fill 
 .FUNC array_fill
 array_fill:
-    STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
-
+    STMFD sp!, {r4,lr}          @ Store registerst that need to be preserved including the link reg.
+    
+    LDR r1, [r0], #+ARRAY_DATA  @ r1 = array length
     MOV r2, #0
     .Lfill_array:
         STR r2, [r0], #+4
@@ -56,7 +90,7 @@ array_fill:
         CMP r2, r1
     BLO .Lfill_array
 @ ─────────────────────────────────────────────────
-LDMFD sp!, {pc}                @ Restore the registers and link reg.
+LDMFD sp!, {r4,pc}              @ Restore the registers and link reg.
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -64,16 +98,15 @@ LDMFD sp!, {pc}                @ Restore the registers and link reg.
 @│ Fills an array with random ints from 0 to the   │
 @│ size of the array.                              │
 @│ param(r0): pointer to the array to fill.        │
-@│ param(r1): The size of the array.               │
 @│ return: nothing                                 │
 @└─────────────────────────────────────────────────┘  
 .GLOBAL array_fill_random
 .FUNC array_fill_random
 array_fill_random:
-    STMFD sp!, {r4,lr}         @ Store registerst that need to be preserved including the link reg.
+    STMFD sp!, {r4-r5,lr}         @ Store registerst that need to be preserved including the link reg.
     
+    LDR r5, [r0], #+ARRAY_DATA  @ r5 = array length
     MOV r4, r0
-    MOV r5, r1
 
     MOV r6, #0
 	MOV	r0, #0
@@ -101,23 +134,23 @@ array_fill_random:
         CMP r6, r5
     BLO .Lfill_array_rand
 @ ─────────────────────────────────────────────────
-LDMFD sp!, {r4,pc}             @ Restore the registers and link reg.
+LDMFD sp!, {r4-r5,pc}             @ Restore the registers and link reg.
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ array_print()                                   │
+@│ array_toString()                                │
 @│ prints an array of intergers.                   │
 @│ param(r0): pointer to the array to print.       │
-@│ param(r1): length of the array.                 │
 @│ return: nothing                                 │
 @└─────────────────────────────────────────────────┘  
-.GLOBAL array_print
-.FUNC array_print
-array_print:
+.GLOBAL array_toString
+.FUNC array_toString
+array_toString:
     STMFD sp!, {lr}            @ Store registerst that need to be preserved including the link reg.
 
     WRAP_CNT=50
 
+    LDR r1, [r0], #+ARRAY_DATA  @ r5 = array length
     MOV r5, r0
     SUBS r1, r1, #1
     BMI .Larray_print_return
@@ -165,6 +198,7 @@ array_swap:
     
     MUL r1, r1, r3
     MUL r2, r2, r3
+    ADD r0, r0, #ARRAY_DATA
     LDR r5, [r0,r1]            @ Temp for value a
     LDR r4, [r0,r2]            @ Temp for value b
     STR r4, [r0,r1]
@@ -189,6 +223,7 @@ LDMFD sp!, {r4,r5,pc}          @ Restore the registers and link reg.
 array_ofWrdSwap:
     STMFD sp!, {r4,lr}         @ Store registerst that need to be preserved including the link reg.
     
+    ADD r0, r0, #ARRAY_DATA
     LDR r3, [r0,r1, LSL #2]    @ Temp for value a
     LDR r4, [r0,r2, LSL #2]    @ Temp for value b
     STR r4, [r0,r1, LSL #2]
