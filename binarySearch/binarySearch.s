@@ -6,6 +6,9 @@
 @└─────────────────────────────────────────────────────────────────────────────┘
 .TEXT
 
+.MACRO HALF $p0
+    MOV   \$p0, \$p0, LSR  #1
+.ENDM
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│                           binarySearch                                      │
@@ -18,16 +21,20 @@
 @│─────────────────────────────────────────────────────────────────────────────│
 @│ r0: target, unsigned int. The value to search for.                          │
 @│ r1: array, pointer to the array to search.                                  │
-@│ r3 arrayLen, unsigned int. Length of the array.                             │
+@│ r2 arrayLen, unsigned int. Length of the array.                             │
 @│ return: pointer to the new item found.                                      │
 @└─────────────────────────────────────────────────────────────────────────────┘
 .GLOBAL binarySearch
 .FUNC binarySearch
+    target .req r0; array .req r1; len .req r2
+    ELEMENT_SIZE=4
 binarySearch:
     STMFD sp!, {r4,lr}
-
     
-.LbinarySearch_exit
+    
+       
+.LbinarySearch_exit:
 @ ─────────────────────────────────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
 .ENDFUNC
+#.unreq target; .unreq array; .unreq len;

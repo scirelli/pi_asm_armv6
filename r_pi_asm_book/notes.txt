@@ -431,7 +431,8 @@ Then just load the address of values into a register and endvalues into another,
 
 .float
 .req      @ The register equate directive maps a symbol to a register. Its a bit like using a define statement in C. I use them all the time because it makes the source just that much easier to read.
-                Example: li .req r0  @ mapped the symbol lo to r0. 
+                Example: li .req r0  @ mapped the symbol li to r0. 
+.unreq alias @ removes the above equate
 .rept <n>  @ Repeat directive repeats a block of code terminated by .endr n times.
 
 PUSH

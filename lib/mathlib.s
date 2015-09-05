@@ -126,4 +126,8 @@ BX lr
 .MACRO ZERO $p0
     MOV   \$p0, #0
 .ENDM
+
+.MACRO HALF $p0
+    MOV   \$p0, \$p0, LSR  #1
+.ENDM
 @##################################################
