@@ -37,3 +37,6 @@ x/nfu <addr>                        '/' signify change i nthe defaults
                                     u   unit size. b=byte, h=halfwords, w=word, g=giant word (eight bytes)
                                     <addr> the start address from which this is to happen
                                     $<label> to get the label's address
+kill                                Stop program execution
+set args                            set arguments for next time program is run
+show args

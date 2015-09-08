@@ -22,6 +22,7 @@ testData:
     .byte 48+3
     .byte 48+4
     .byte 48+7
+    .byte 0
 testDataSz:
     .word 13
 sArray_n:      .asciz "Array:\n"
@@ -29,6 +30,7 @@ sArray:        .asciz "Array: "
 sLook:         .asciz "Looking for %d.\n"
 sTestIns:      .asciz "Test binarySearch()\n"
 sFound:        .asciz "Found %d at [%d].\n"
+sInteger:      .asciz "String is %d.\n"
 .ALIGN 4
 .TEXT
 
@@ -42,6 +44,12 @@ sFound:        .asciz "Found %d at [%d].\n"
 main:
     STMFD sp!, {r4-r12,lr}
     
+    LDR r0, [r1,#4]
+    BL stoi
+
+    MOV r1, r0
+    LDR r0, =sInteger
+    BL printf
 
 .Lend:
  @─────────────────────────────────────────────────
