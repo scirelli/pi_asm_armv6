@@ -78,7 +78,10 @@ itos:
     
     .Lreturn_value:                             @ return str;
         MOV r0, strBuffer
-        ADD r0, r0, #1
+        CMP negate, #TRUE
+            MOVEQ r1, #minusSign
+            STREQB r1, [r0]   
+        ADDNE r0, r0, #1
     
 .Litos_exit:
 @ ─────────────────────────────────────────────────────────────────────────────

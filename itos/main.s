@@ -47,6 +47,10 @@ main:
     
     MOV r0, #0xFF
     MOV r0, r0, LSL #2
+    MOV r1, #0x1
+    MOV r1, r1, LSL #31
+    ORR r0, r1, r0
+
     BL itos
 
     MOV r1, r0
