@@ -686,3 +686,51 @@ bl __aeabi_uidiv
 @└────────────────────────────────┘
 bl __aeabi_idivmod
 bl __aeabi_uidivmod
+
+SXT sign extend.
+    SXT, SXTA, UXT, and UXTA
+
+    Sign extend, Sign extend with Add, Zero extend, and Zero extend with Add.
+    Syntax
+
+    SXT<extend>{cond} {Rd}, Rm{, rotation}
+    SXTA<extend>{cond} {Rd}, Rn, Rm{, rotation}
+    UXT<extend>{cond} {Rd}, Rm{, rotation}
+    UXTA<extend>{cond} {Rd}, Rn, Rm{, rotation}
+
+    where:
+
+    <extend>
+
+    is one of:
+
+    B16
+        Extends two 8-bit values to two 16-bit values.
+    B
+        Extends an 8-bit value to a 32-bit value.
+    H
+        Extends a 16-bit value to a 32-bit value.
+    cond
+        is an optional condition code (see Conditional execution).
+    Rd
+        is the destination register.
+    Rn
+        is the register holding the number to add (SXTA and UXTA only).
+    Rm
+        is the register holding the value to extend.
+    rotation
+        is one of:
+
+        ROR #8
+
+        Value from Rm is rotated right 8 bits.
+        ROR #16
+
+        Value from Rm is rotated right 16 bits.
+        ROR #24
+
+        Value from Rm is rotated right 24 bits.
+
+         If rotation is omitted, no rotation is performed.
+
+     You must not use r15 for Rd, Rn, or Rm.
