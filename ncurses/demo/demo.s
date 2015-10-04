@@ -24,7 +24,7 @@ testData:
     .byte 48+7
     .byte 0
 testDataSz: .word 13
-DELAY:      .word 3000
+DELAY:      .word 30000
 sArray_n:   .asciz "Array:\n"
 Balls:
 sBall1:     .asciz "O"
@@ -45,20 +45,21 @@ sBall15:    .asciz "▧"
 sBall16:    .asciz "▨"
 sBall17:    .asciz "▩"
 sBall18:    .asciz "▪"
-sBall18:    .asciz "●"
-sBall18:    .asciz "◐"
-sBall18:    .asciz "◑"
-sBall18:    .asciz "◇"
-sBall18:    .asciz "◊"
-sBall18:    .asciz "○"
-sBall18:    .asciz "◎"
-sBall18:    .asciz "☺"
-sBall18:    .asciz "☻"
-sBall18:    .asciz "☼"
-sBall18:    .asciz "★"
-sBall18:    .asciz "☆"
-sBall18:    .asciz "◆"
+sBall19:    .asciz "●"
+sBall20:    .asciz "◑"
+sBall21:    .asciz "◇"
+sBall22:    .asciz "◊"
+sBall23:    .asciz "○"
+sBall24:    .asciz "◎"
+sBall25:    .asciz "☺"
+sBall26:    .asciz "☻"
+sBall27:    .asciz "☼"
+sBall28:    .asciz "★"
+sBall29:    .asciz "☆"
+sBall30:    .asciz "◆"
+sBall31:    .asciz "◐"
 
+Padding:
 sPaddleCapT1: .asciz "▲"
 sPaddleCapB1: .asciz "▼" 
 sPaddleCapT2: .asciz "△"
@@ -66,15 +67,17 @@ sPaddleCapB2: .asciz "▽"
 sPaddleCapT3: .asciz "∆"
 sPaddleCapB3: .asciz "∇"
 
+Paddles:
 sPaddle1:    .asciz "▓"
 sPaddle2:    .asciz "▐"
 sPaddle3:    .asciz "░"
 sPaddle4:    .asciz "▒"
 sPaddle5:    .asciz "▓"
 
+Borders:
 sBorder1:    .asciz "#"
-sBorder1:    .asciz "◘"
-sBorder1:    .asciz "◙"
+sBorder2:    .asciz "◘"
+sBorder3:    .asciz "◙"
 
 .ALIGN 4
 .TEXT
@@ -102,7 +105,7 @@ main:
 
     LDR r4, =DELAY                  @ Loads the delay time 
     LDR r4, [r4]                    
-    LDR r5, =sO                     @ and the "ball" string
+    LDR r5, =sBorder2               @ and the "ball" string
     MOV r6, #0
     
     BL initscr                      @ Call the initialization functions
@@ -120,29 +123,13 @@ main:
     .Linf_while:
         BL clear
         
-        MOV r0, #0
-        MOV r1, r6
-        MOV r2, r5
-        BL mvprintw
+        MOV r0, r5
+        BL drawBorder
 
         BL refresh
 
         MOV r0, r4
         BL usleep
-
-        BL getmaxxy   
-        MOV r7, r0
-        MOV r8, r1
-
-        CMP r6, r7
-            MOVGE r9, #-1
-            BGE .Lmov
-
-        MOV r0, #0
-        CMP r6, r0
-            MOVLE r9, #1
-        .Lmov:
-            ADD r6, r6, r9
     BAL .Linf_while
 
     BL endwin
@@ -166,14 +153,64 @@ getmaxxy:
 
     LDRH r0, [r2, #6]               @ The first half of the word is x
     SXTH r0, r0
-    ADD  r0, r0, #1
+    @ ADD  r0, r0, #1
 
     LDRH r1, [r2, #4]               @ the lower half is y
     SXTH r1, r1
-    ADD  r1, r1, #1
+    @ ADD  r1, r1, #1
     
+.Lgetmaxxy_end:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r4,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ drawBorder()                                    │
+@│ param(r0): optional. char to use.               │
+@│ return                                          │
+@└─────────────────────────────────────────────────┘  
+.FUNC drawBorder
+drawBorder:
+    STMFD sp!, {r4-r8,lr}          @ Keep 8byte aligned
+
+    MOV r4, r0                  @ Back up char
+
+    BL getmaxxy
+    MOV r5, r0                  @ max_x
+    MOV r6, r1                  @ max_y
+
+    MOV r7, #0                  @ loop index
+    .Lhorizontal:
+        MOV r0, #0  @ y
+        MOV r1, r7  @ x
+        MOV r2, r4
+        BL mvprintw
+
+        MOV r0, r6  @ y
+        MOV r1, r7  @ x
+        MOV r2, r4
+        BL mvprintw
+
+        ADD r7, r7, #1
+    CMP r7, r5
+    BLS .Lhorizontal 
+
+    MOV r7, #0                  @ loop index
+    .Lvertical:
+        MOV r0, r7  @ y
+        MOV r1, #0  @ x
+        MOV r2, r4
+        BL mvprintw
+
+        MOV r0, r7  @ y
+        MOV r1, r5  @ x
+        MOV r2, r4
+        BL mvprintw
+
+        ADD r7, r7, #1
+    CMP r7, r6
+    BLS .Lvertical
 .Lend:
  @─────────────────────────────────────────────────
-    LDMFD sp!, {r4,lr}
-    BX lr
+    LDMFD sp!, {r4-r8,pc}
 .ENDFUNC
