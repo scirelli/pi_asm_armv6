@@ -1,6 +1,6 @@
 FILE=demo
 
-LDFLAGS=-lncurses -g
+LDFLAGS=-lncurses -g -O3
 
 all: $(FILE)
 
