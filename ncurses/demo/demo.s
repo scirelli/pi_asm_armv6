@@ -81,6 +81,9 @@ sBorder3:    .asciz "◙"
 
 .ALIGN 4
 .TEXT
+@ Keys
+KEY_END=0550
+KEY_EXIT=0551
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ main()                                          │
@@ -90,6 +93,8 @@ sBorder3:    .asciz "◙"
 .GLOBAL main
 .FUNC main
 FALSE=0
+NULL=0
+TRUE=1
 main:
     STMFD sp!, {r4-r12,lr}          @ Keep 8byte aligned
     MOV fp, sp
@@ -109,13 +114,19 @@ main:
     MOV r6, #0
     
     BL initscr                      @ Call the initialization functions
-    BL noecho
+    BL noecho                       @ Turns off char echoing when users types a key
+    BL cbreak                       @ How ctrl+z ctrl+c are handle. raw() passes them directly to the program instead of interpreting them first
+
     MOV r0, #FALSE
     BL curs_set
-    
+
+    LDR r0, =stdscr
+    MOV r1, #TRUE
+    BL keypad                       @ Allows function keys like F1 and arrow keys
+
     BL getmaxxy   
-    STR r0, [fp,#-4]               @ max_x = r0
-    STR r1, [fp,#-8]               @ max_y = r1
+    STR r0, [fp,#-4]                @ max_x = r0
+    STR r1, [fp,#-8]                @ max_y = r1
     MOV r7, r0
     MOV r8, r1
     MOV r9, #1
@@ -130,7 +141,9 @@ main:
 
         MOV r0, r4
         BL usleep
-    BAL .Linf_while
+        BL getch
+        CMP r0, #KEY_END
+    BNE .Linf_while
 
     BL endwin
 .Lmain_end:
