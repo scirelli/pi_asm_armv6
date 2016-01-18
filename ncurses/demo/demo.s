@@ -78,6 +78,8 @@ Borders:
 sBorder1:    .asciz "#"
 sBorder2:    .asciz "◘"
 sBorder3:    .asciz "◙"
+sBorder4:    .asciz "H"
+sBorder5:    .asciz "X"
 
 .ALIGN 4
 .TEXT
@@ -99,18 +101,18 @@ main:
     STMFD sp!, {r4-r12,lr}          @ Keep 8byte aligned
     MOV fp, sp
     
-    SUB sp, sp, #12                 @ Make room for max_y and max_x
+    SUB sp, sp, #12                 @ Make room for max_y and max_x, and direction. See EOF for pic of the stack, for a refresher.
                                     @ fp-4 = max_x; fp-8 = max_y
                                     @ fp-12 = direction
     max_x=-4; max_y=-8;             @ offset for max_x and max_y from the fp
-    MOV   r0, #0                    @ max_x = 0;
+    MOV   r0, #1                    @ max_x = 0;
     MOV   r1, #0                    @ max_y = 0;
-    MOV   r2, #1
-    STMFD fp, {r0,r1,r2}            @ store it.
-
+    MOV   r2, #0
+    STMDB fp, {r0,r1,r2}            @ store it. with out write back, so fp does not move.
+                                    @ STMDB = STMFD. When this is written it's written r2,r1,r0 in memory. This then looks correct when looking up from the sp. SP see the values from r0,r1,r2
     LDR r4, =DELAY                  @ Loads the delay time 
     LDR r4, [r4]                    
-    LDR r5, =sBorder2               @ and the "ball" string
+    LDR r5, =sBorder4               @ and the "border" string
     MOV r6, #0
     
     BL initscr                      @ Call the initialization functions
@@ -125,8 +127,8 @@ main:
     BL keypad                       @ Allows function keys like F1 and arrow keys
 
     BL getmaxxy   
-    STR r0, [fp,#-4]                @ max_x = r0
-    STR r1, [fp,#-8]                @ max_y = r1
+    STR r0, [fp,#max_x]                @ max_x = r0
+    STR r1, [fp,#max_y]                @ max_y = r1
     MOV r7, r0
     MOV r8, r1
     MOV r9, #1
@@ -227,3 +229,101 @@ drawBorder:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r8,pc}
 .ENDFUNC
+
+@ 
+@ Bit=1, Nibble = 4bits, Byte = 8bits, Halfword = 16bits, Word = 32bits, Doubleword = 64bits*/
+@ Memory is address in byte blocks
+@
+@    MOV fp, sp
+@    
+@    SUB sp, sp, #12                 @ Make room for max_y and max_x, and direction. See EOF for pic of the stack, for a refresher.
+                                     @ fp-4 = max_x; fp-8 = max_y
+                                     @ fp-12 = direction
+@    max_x=-4; max_y=-8;             @ offset for max_x and max_y from the fp
+@    MOV   r0, #1                    @ max_x = 0;
+@    MOV   r1, #0                    @ max_y = 0;
+@    MOV   r2, #0
+@    STMDB fp, {r0,r1,r2}            @ store it. with out write back, so fp does not move.
+                                     @ STMDB = STMFD. When this is written it's written r2,r1,r0 in memory. This then looks correct when looking up from the sp. SP see the values from r0,r1,r2
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│What the stack looks like at the start of the program.  │
+@└────────────────────────────────────────────────────────┘
+@           ┍━━━━━━┑  
+@           ├──────┤ ---------------------
+@ 0xbefff170│ 0xXX │ <-SP(r13), FP(r11)                     Some notes for addressing. For a full stack you don't count the byte you are on.
+@           ├──────┤ --------------------- byte             
+@ 0xbefff16f│ 0x00 │
+@           ├──────┤ --------------------- Halfword
+@ 0xbefff16e│ 0x00 │ 
+@           ├──────┤
+@ 0xbefff16d│ 0x00 │
+@           ├──────┤ --------------------- Word
+@ 0xbefff16c│ 0x00 │ max_x= FP-4                            But when you write to an address, you start at the byte the address is pointing at.
+@           ├──────┤
+@ 0xbefff16b│ 0x00 │
+@           ├──────┤
+@ 0xbefff16a│ 0x00 │
+@           ├──────┤
+@ 0xbefff169│ 0x00 │
+@           ├──────┤
+@ 0xbefff168│ 0x00 │ max_y= FP-8
+@           ├──────┤
+@ 0xbefff167│ 0x01 │
+@           ├──────┤
+@ 0xbefff166│ 0x00 │
+@           ├──────┤
+@ 0xbefff165│ 0x00 │   
+@           ├──────┤
+@ 0xbefff164│ 0x00 │ <-SP(r13) direction= FP-12   
+@           ├──────┤
+@ 0xbefff163│      │   
+@           ├──────┤
+@ 0xbefff162│      │   
+@           ├──────┤
+@ 0xbefff161│      │   
+@           ├──────┤
+@ 0xbefff160│      │     
+@           ├──────┤
+@ 0xbefff15f│      │
+@           ├──────┤
+@ 0xbefff15e│      │
+@           ├──────┤
+@ 0xbefff15d│      │
+@           ├──────┤
+@ 0xbefff15c│      │   
+@           ├──────┤
+@ 0xbefff15b│      │    
+@           ├──────┤
+@ 0xbefff15a│      │   
+@           ├──────┤
+@ 0xbefff159│      │   
+@           ├──────┤
+@ 0xbefff158│      │
+@           ├──────┤
+@ 0xbefff157│      │
+@           ├──────┤
+@ 0xbefff156│      │   
+@           ├──────┤
+@ 0xbefff155│      │    
+@           ├──────┤
+@ 0xbefff154│      │   
+@           ├──────┤
+@ 0xbefff153│      │   
+@           ├──────┤
+@ 0xbefff152│      │
+@           ├──────┤
+@ 0xbefff151│      │
+@           ├──────┤
+@ 0xbefff150│      │   
+@           ├──────┤
+@ 0xbefff14f│      │    
+@           ├──────┤
+@ 0xbefff14e│      │   
+@           ├──────┤
+@ 0xbefff14d│      │   
+@           ├──────┤
+@ 0xbefff14c│      │   
+@           ├──────┤
+@ 0xbefff14b│      │   
+@           └──────┘
+@
