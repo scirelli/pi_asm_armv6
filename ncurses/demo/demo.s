@@ -83,9 +83,34 @@ sBorder5:    .asciz "X"
 
 .ALIGN 4
 .TEXT
+
 @ Keys
 KEY_END=0550
 KEY_EXIT=0551
+KEY_SPACE=0x20
+KEY_ESC=0x1B
+
+
+@
+BORDER=sBorder1
+EXIT_KEY=KEY_ESC
+
+@############# Macros ######################
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ DRAWBALL()                                      │
+@│ param(r0): int: x position.                     │
+@│ param(r1): int: y position.                     │
+@│ param(r2): (optional) *char: The ball string.   │
+@│ return null                                     │
+@└─────────────────────────────────────────────────┘  
+.MACRO DRAWBALL $p0 $p1 $p2
+    MOV r0, \$p0  @ y
+    MOV r1, \$p1  @ x
+    MOV r2, \$p2
+    BL mvprintw
+.ENDM
+@###########################################
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ main()                                          │
@@ -112,7 +137,7 @@ main:
                                     @ STMDB = STMFD. When this is written it's written r2,r1,r0 in memory. This then looks correct when looking up from the sp. SP see the values from r0,r1,r2
     LDR r4, =DELAY                  @ Loads the delay time 
     LDR r4, [r4]                    
-    LDR r5, =sBorder4               @ and the "border" string
+    LDR r5, =BORDER                 @ and the "border" string
     MOV r6, #0
     
     BL initscr                      @ Call the initialization functions
@@ -127,24 +152,26 @@ main:
     BL keypad                       @ Allows function keys like F1 and arrow keys
 
     BL getmaxxy   
-    STR r0, [fp,#max_x]                @ max_x = r0
-    STR r1, [fp,#max_y]                @ max_y = r1
+    STR r0, [fp,#max_x]             @ max_x = r0
+    STR r1, [fp,#max_y]             @ max_y = r1
     MOV r7, r0
     MOV r8, r1
     MOV r9, #1
-
+    
     .Linf_while:
         BL clear
         
         MOV r0, r5
         BL drawBorder
 
+        DRAWBALL #20,#20,r5
+
         BL refresh
 
-        MOV r0, r4
+        MOV r0, r4                 @ r4 is DELAY 
         BL usleep
         BL getch
-        CMP r0, #KEY_END
+        CMP r0, #EXIT_KEY
     BNE .Linf_while
 
     BL endwin
@@ -230,6 +257,27 @@ drawBorder:
     LDMFD sp!, {r4-r8,pc}
 .ENDFUNC
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@####################################################################################
+@##################################### Notes ########################################
+@####################################################################################
+@
 @ 
 @ Bit=1, Nibble = 4bits, Byte = 8bits, Halfword = 16bits, Word = 32bits, Doubleword = 64bits*/
 @ Memory is address in byte blocks

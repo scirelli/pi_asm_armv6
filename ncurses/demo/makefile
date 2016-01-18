@@ -13,5 +13,5 @@ c_source:
 clean:
 	rm -f $(FILE) $(FILE).o
 
-run:
+run: $(FILE)
 	./$(FILE); echo $$?;

@@ -834,3 +834,17 @@ SXT sign extend.
 
      You must not use r15 for Rd, Rn, or Rm.
 
+
+@############# Macros ######################
+.MACRO HALF $p0
+    MOV \$p0, \$p0, LSR  #1
+.ENDM
+
+.MACRO SHALF $p0
+    MOV \$p0, \$p0, ASR  #1
+.ENDM
+
+.MACRO ZERO $p0
+    MOV \$p0, #0
+.ENDM
+@###########################################
