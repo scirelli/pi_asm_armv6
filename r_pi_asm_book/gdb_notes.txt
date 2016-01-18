@@ -40,3 +40,5 @@ x/nfu <addr>                        '/' signify change i nthe defaults
 kill                                Stop program execution
 set args                            set arguments for next time program is run
 show args
+
+Ctrl + L                            Refresh screen

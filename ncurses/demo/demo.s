@@ -4,28 +4,9 @@
 @└─────────────────────────────────────────────────────────────────────────────┘
 .balign 4
 .data
-arrayBuffer: .SKIP 13*4   @ For printing ints 
 .section	.rodata
-arrayBufferSz: .word 13
-zeroCharCode:.byte 48
-testData:
-    .byte 48+1
-    .byte 48+5 
-    .byte 48+3 
-    .byte 48+5
-    .byte 48+6 
-    .byte 48+7
-    .byte 48+8
-    .byte 48+5
-    .byte 48+6
-    .byte 48+2
-    .byte 48+3
-    .byte 48+4
-    .byte 48+7
-    .byte 0
-testDataSz: .word 13
 DELAY:      .word 30000
-sArray_n:   .asciz "Array:\n"
+
 Balls:
 sBall1:     .asciz "O"
 sBall2:     .asciz "©"
@@ -91,12 +72,12 @@ KEY_SPACE=0x20
 KEY_ESC=0x1B
 
 
-@
+@ Alias some stuff
 BORDER=sBorder1
+BALL=sBall1
 EXIT_KEY=KEY_ESC
 
 @############# Macros ######################
-
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ DRAWBALL()                                      │
 @│ param(r0): int: x position.                     │
@@ -105,8 +86,8 @@ EXIT_KEY=KEY_ESC
 @│ return null                                     │
 @└─────────────────────────────────────────────────┘  
 .MACRO DRAWBALL $p0 $p1 $p2
-    MOV r0, \$p0  @ y
-    MOV r1, \$p1  @ x
+    MOV r0, \$p1  @ y
+    MOV r1, \$p0  @ x
     MOV r2, \$p2
     BL mvprintw
 .ENDM
@@ -138,9 +119,11 @@ main:
     LDR r4, =DELAY                  @ Loads the delay time 
     LDR r4, [r4]                    
     LDR r5, =BORDER                 @ and the "border" string
-    MOV r6, #0
+    LDR r6, =BALL                   @ and the "ball" string
     
-    BL initscr                      @ Call the initialization functions
+    BL initscr                      @ Call the initialization functions. Returns a WINDOW *w
+    MOV r1, #TRUE
+    BL nodelay                      @ nodelay( w, TRUE );
     BL noecho                       @ Turns off char echoing when users types a key
     BL cbreak                       @ How ctrl+z ctrl+c are handle. raw() passes them directly to the program instead of interpreting them first
 
@@ -156,15 +139,23 @@ main:
     STR r1, [fp,#max_y]             @ max_y = r1
     MOV r7, r0
     MOV r8, r1
-    MOV r9, #1
-    
+
+    MOV r9, #1                      @ loop variant
+    MOV r10, #1                     @ direction
+
     .Linf_while:
         BL clear
         
         MOV r0, r5
         BL drawBorder
 
-        DRAWBALL #20,#20,r5
+        DRAWBALL #20,r9,r6
+
+        ADD r9, r9, r10             @ Move the ball in some dirction
+        CMP r9, r8                  @ Make sure it stays in bounds
+        MOVGE r10, #-1
+        CMP r9, #1
+        MOVLE r10, #1
 
         BL refresh
 
