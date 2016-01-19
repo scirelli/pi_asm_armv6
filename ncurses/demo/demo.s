@@ -62,6 +62,9 @@ sBorder3:    .asciz "◙"
 sBorder4:    .asciz "H"
 sBorder5:    .asciz "X"
 
+sBLANK:      .ascii "\0"
+sSPACE:      .asciz " "
+
 .ALIGN 4
 .TEXT
 
@@ -82,7 +85,7 @@ EXIT_KEY=KEY_ESC
 @│ DRAWBALL()                                      │
 @│ param(r0): int: x position.                     │
 @│ param(r1): int: y position.                     │
-@│ param(r2): (optional) *char: The ball string.   │
+@│ param(r2): *char: The ball string.              │
 @│ return null                                     │
 @└─────────────────────────────────────────────────┘  
 .MACRO DRAWBALL $p0 $p1 $p2
@@ -106,28 +109,29 @@ TRUE=1
 main:
     STMFD sp!, {r4-r12,lr}          @ Keep 8byte aligned
     MOV fp, sp
-    
-    SUB sp, sp, #12                 @ Make room for max_y and max_x, and direction. See EOF for pic of the stack, for a refresher.
+                                    @ max_x,max_y,dirx,diry,x,y
+    SUB sp, sp, #20                 @ Make room for max_y and max_x, and direction x and y. See EOF for pic of the stack, for a refresher.
                                     @ fp-4 = max_x; fp-8 = max_y
                                     @ fp-12 = direction
-    max_x=-4; max_y=-8;             @ offset for max_x and max_y from the fp
-    MOV   r0, #1                    @ max_x = 0;
-    MOV   r1, #0                    @ max_y = 0;
-    MOV   r2, #0
-    STMDB fp, {r0,r1,r2}            @ store it. with out write back, so fp does not move.
+    max_x=-4;  max_y=-8;            @ offset for max_x and max_y from the fp
+    dir_x=-12; dir_y=-16;           @ offset for dir_x, dir_y from the fp
+    MOV   r0, #1                    @ dir_y
+    MOV   r1, #1                    @ dir_x = 1;
+    MOV   r2, #0                    @ max_y = 0;
+    MOV   r3, #0                    @ max_x = 0;
+    STMDB fp, {r0,r1,r2,r3}         @ store it. with out write back, so fp does not move.
                                     @ STMDB = STMFD. When this is written it's written r2,r1,r0 in memory. This then looks correct when looking up from the sp. SP see the values from r0,r1,r2
-    LDR r4, =DELAY                  @ Loads the delay time 
-    LDR r4, [r4]                    
-    LDR r5, =BORDER                 @ and the "border" string
-    LDR r6, =BALL                   @ and the "ball" string
-    
+    LDR r4, =DELAY                  @ Loads the delay time. &delay
+    LDR r4, [r4]                    @ delay's value.
+
+                                    @ Setup ncurses 
     BL initscr                      @ Call the initialization functions. Returns a WINDOW *w
     MOV r1, #TRUE
     BL nodelay                      @ nodelay( w, TRUE );
     BL noecho                       @ Turns off char echoing when users types a key
     BL cbreak                       @ How ctrl+z ctrl+c are handle. raw() passes them directly to the program instead of interpreting them first
 
-    MOV r0, #FALSE
+    MOV r0, #FALSE                  @ Hide the cursor.
     BL curs_set
 
     LDR r0, =stdscr
@@ -137,29 +141,46 @@ main:
     BL getmaxxy   
     STR r0, [fp,#max_x]             @ max_x = r0
     STR r1, [fp,#max_y]             @ max_y = r1
-    MOV r7, r0
-    MOV r8, r1
+    MOV r9, r0                      @ max_x
+    MOV r10, r1                     @ max_y
 
-    MOV r9, #1                      @ loop variant
-    MOV r10, #1                     @ direction
+    MOV r5, #2                      @ x: start it at x=2
+    MOV r6, #2                      @ y: start it at y=2
+    
+    LDR r7, [fp,#dir_x]             @ dir_x
+    LDR r8, [fp,#dir_y]             @ dir_y
 
     .Linf_while:
         BL clear
         
-        MOV r0, r5
+        LDR r0, =BORDER             @ get the address of the boarder string. &border
         BL drawBorder
 
-        DRAWBALL #20,r9,r6
+        LDR r2, =BALL               @ get the address of teh ball string. &ball
+        DRAWBALL r5,r6,r2
 
-        ADD r9, r9, r10             @ Move the ball in some dirction
-        CMP r9, r8                  @ Make sure it stays in bounds
-        MOVGE r10, #-1
-        CMP r9, #1
-        MOVLE r10, #1
+        ADD r5, r5, r7              @ Move the ball in some dirction
+        ADD r6, r6, r8              @ x+1,y+1
+
+        CMP   r5, r9                @ Make sure x position stays within the screen
+        MVNGE r7, r7                @ Make sure x<max_x. If x>=max_x reverse direction
+        SUBGE r5, r9, #1            @ and set x < max_x
+
+        CMP r5, #0                  @ Make sure x position stays within the screen
+        MVNLE r7, r7                @ If x<=0 reverse direction
+        MOVLE r5, #1                @ and set x > 0
+
+        CMP r6, r10                 @ Make sure y position stays within the screen
+        MVNGE r8, r8                @ If y>= max_y reverse direction
+        SUBGE r6, r10, #1            @ set y<max_y
+
+        CMP r6, #0                  @ Make sure y position stays within the screen
+        MVNLE r8, r8                @ If y<=0 reverse direction
+        MOVLE r6, #1                @ and set y > 0
 
         BL refresh
 
-        MOV r0, r4                 @ r4 is DELAY 
+        MOV r0, r4                  @ r4 is DELAY 
         BL usleep
         BL getch
         CMP r0, #EXIT_KEY
@@ -204,9 +225,9 @@ getmaxxy:
 @└─────────────────────────────────────────────────┘  
 .FUNC drawBorder
 drawBorder:
-    STMFD sp!, {r4-r8,lr}          @ Keep 8byte aligned
+    STMFD sp!, {r4-r8,lr}       @ Keep 8byte aligned
 
-    MOV r4, r0                  @ Back up char
+    MOV r4, r0                  @ Back up the char
 
     BL getmaxxy
     MOV r5, r0                  @ max_x
@@ -247,19 +268,6 @@ drawBorder:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r8,pc}
 .ENDFUNC
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

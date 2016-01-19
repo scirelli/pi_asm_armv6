@@ -53,7 +53,7 @@
 @├───────────────────┤
 @│ R3 │ Available    │
 @├───────────────────┤
-@│ R4 │ Available    │
+@│ R4 │ Available    │ store on stack for func calls
 @├───────────────────┤
 @│ R5 │ Available    │
 @├───────────────────┤
@@ -249,7 +249,7 @@ Rotation Right Extended
 
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
-@│ Immediate Constany Range       │
+@│ Immediate Constant Range       │
 @└────────────────────────────────┘
 Immediates only have 12bits to represnt them. 0000 0000 0000.
 The 12-bit field is split into two, one part of 8bits xxxx 0000 0000 and one part 4-bits 0000 xxxx xxxx.
