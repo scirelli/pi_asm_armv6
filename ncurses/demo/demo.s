@@ -83,9 +83,9 @@ EXIT_KEY=KEY_ESC
 @############# Macros ######################
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ DRAWBALL()                                      │
-@│ param(r0): int: x position.                     │
-@│ param(r1): int: y position.                     │
-@│ param(r2): *char: The ball string.              │
+@│ param(p0): int: x position.                     │
+@│ param(p1): int: y position.                     │
+@│ param(p2): *char: The ball string.              │
 @│ return null                                     │
 @└─────────────────────────────────────────────────┘  
 .MACRO DRAWBALL $p0 $p1 $p2
@@ -150,33 +150,39 @@ main:
     LDR r7, [fp,#dir_x]             @ dir_x
     LDR r8, [fp,#dir_y]             @ dir_y
 
+    BL clear
+    
+    LDR r0, =BORDER             @ get the address of the boarder string. &border
+    BL drawBorder
     .Linf_while:
-        BL clear
-        
-        LDR r0, =BORDER             @ get the address of the boarder string. &border
-        BL drawBorder
-
-        LDR r2, =BALL               @ get the address of teh ball string. &ball
+        LDR r2, =sSPACE
         DRAWBALL r5,r6,r2
 
         ADD r5, r5, r7              @ Move the ball in some dirction
         ADD r6, r6, r8              @ x+1,y+1
 
         CMP   r5, r9                @ Make sure x position stays within the screen
-        MVNGE r7, r7                @ Make sure x<max_x. If x>=max_x reverse direction
+        MVNGE r7, r7                @ Make sure x<max_x. If x>=max_x reverse direction. negate the number
+        ADDGE r7, r7, #1
         SUBGE r5, r9, #1            @ and set x < max_x
 
         CMP r5, #0                  @ Make sure x position stays within the screen
         MVNLE r7, r7                @ If x<=0 reverse direction
+        ADDLE r7, r7, #1            @ If x<=0 reverse direction
         MOVLE r5, #1                @ and set x > 0
 
         CMP r6, r10                 @ Make sure y position stays within the screen
         MVNGE r8, r8                @ If y>= max_y reverse direction
+        ADDGE r8, r8, #1
         SUBGE r6, r10, #1            @ set y<max_y
 
         CMP r6, #0                  @ Make sure y position stays within the screen
         MVNLE r8, r8                @ If y<=0 reverse direction
+        ADDLE r8, r8, #1
         MOVLE r6, #1                @ and set y > 0
+
+        LDR r2, =BALL               @ get the address of teh ball string. &ball
+        DRAWBALL r5,r6,r2
 
         BL refresh
 
