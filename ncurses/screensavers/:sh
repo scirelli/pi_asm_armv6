@@ -1,0 +1,17 @@
+FILE=bouncenoerase
+
+CC=gcc
+#LIBS=-lpanel -lncurses 
+LIBS=-lncurses 
+LDFLAGS=-g -O3
+
+all: % 
+
+%: %.s
+	${CC} $(LDFLAGS) $(LIBS) -o $@ $<
+
+clean:
+	rm -f $(FILE) $(FILE).o
+
+run: $(FILE)
+	./$(FILE); echo $$?;
