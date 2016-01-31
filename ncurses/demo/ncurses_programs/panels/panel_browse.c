@@ -70,7 +70,8 @@ void init_wins(WINDOW **wins, int n)
 	y = 2;
 	x = 10;
 	for(i = 0; i < n; ++i)
-	{	wins[i] = newwin(NLINES, NCOLS, y, x);
+	{
+        wins[i] = newwin(NLINES, NCOLS, y, x);
 		sprintf(label, "Window Number %d", i + 1);
 		win_show(wins[i], label, i + 1);
 		y += 3;

@@ -1,14 +1,17 @@
 FILE=demo
 
-LDFLAGS=-lncurses -g -O3
+CC=gcc
+#LIBS=-lpanel -lncurses 
+LIBS=-lncurses 
+LDFLAGS=-g -O3
 
 all: $(FILE)
 
 $(FILE): $(FILE).s
-	gcc $(LDFLAGS) -o $(FILE) $(FILE).s
+	${CC} $(LDFLAGS) $(LIBS) -o $(FILE) $(FILE).s
 
 c_source:
-	gcc -S -std=c99 -o $(FILE).s $(FILE).c
+	${CC} -S -std=c99 -o $(FILE).s $(FILE).c
 
 clean:
 	rm -f $(FILE) $(FILE).o

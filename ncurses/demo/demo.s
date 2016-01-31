@@ -54,6 +54,7 @@ sPaddle2:    .asciz "▐"
 sPaddle3:    .asciz "░"
 sPaddle4:    .asciz "▒"
 sPaddle5:    .asciz "▓"
+sPaddle:     .asciz "/\\\n||\n||\n||\n||\n||\n\\/"
 
 Borders:
 sBorder1:    .asciz "#"
@@ -77,12 +78,14 @@ KEY_ESC=0x1B
 
 @ Alias some stuff
 BORDER=sBorder1
+PADDLE=sPaddle
 BALL=sBall1
 EXIT_KEY=KEY_ESC
 
 @############# Macros ######################
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ DRAWBALL()                                      │
+@│ Uses registers r0, r1 and r2.                   │
 @│ param(p0): int: x position.                     │
 @│ param(p1): int: y position.                     │
 @│ param(p2): *char: The ball string.              │
@@ -93,6 +96,23 @@ EXIT_KEY=KEY_ESC
     MOV r1, \$p0  @ x
     MOV r2, \$p2
     BL mvprintw
+.ENDM
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ INIT_NCURSES                                    │
+@│ Uses registers r0 and r1                        │
+@│ Runs some initialization of ncurses.            │
+@└─────────────────────────────────────────────────┘  
+.MACRO INIT_NCURSES
+                                    @ Setup ncurses 
+    BL initscr                      @ Call the initialization functions. Returns a WINDOW *w
+    MOV r1, #TRUE
+    BL nodelay                      @ nodelay( w, TRUE );
+    BL noecho                       @ Turns off char echoing when users types a key
+    BL cbreak                       @ How ctrl+z ctrl+c are handle. raw() passes them directly to the program instead of interpreting them first
+    BL start_color
+    MOV r0, #FALSE                  @ Hide the cursor.
+    BL curs_set
 .ENDM
 @###########################################
 
@@ -109,12 +129,17 @@ TRUE=1
 main:
     STMFD sp!, {r4-r12,lr}          @ Keep 8byte aligned
     MOV fp, sp
-                                    @ max_x,max_y,dirx,diry,x,y
-    SUB sp, sp, #20                 @ Make room for max_y and max_x, and direction x and y. See EOF for pic of the stack, for a refresher.
+                                    @ max_x,max_y,dirx,diry,paddleWindow1, paddleWindow2
+    SUB sp, sp, #24                 @ Make room for max_y and max_x, and direction x and y. See EOF for pic of the stack, for a refresher.
                                     @ fp-4 = max_x; fp-8 = max_y
-                                    @ fp-12 = direction
+                                    @ fp-12 = dir_x; fp-16 = dir_y
+                                    @ paddleWindow1=-20; paddleWindow2=-24
     max_x=-4;  max_y=-8;            @ offset for max_x and max_y from the fp
     dir_x=-12; dir_y=-16;           @ offset for dir_x, dir_y from the fp
+    paddleWindow1=-20;
+    paddleWindow2=-24;
+    paddleWidth=2; paddleHeight=10;
+
     MOV   r0, #1                    @ dir_y
     MOV   r1, #1                    @ dir_x = 1;
     MOV   r2, #0                    @ max_y = 0;
@@ -122,21 +147,24 @@ main:
     STMDB fp, {r0,r1,r2,r3}         @ store it. with out write back, so fp does not move.
                                     @ STMDB = STMFD. When this is written it's written r2,r1,r0 in memory. This then looks correct when looking up from the sp. SP see the values from r0,r1,r2
     LDR r4, =DELAY                  @ Loads the delay time. &delay
-    LDR r4, [r4]                    @ delay's value.
+    LDR r4, [r4]                    @ Get delay's value.
 
-                                    @ Setup ncurses 
-    BL initscr                      @ Call the initialization functions. Returns a WINDOW *w
-    MOV r1, #TRUE
-    BL nodelay                      @ nodelay( w, TRUE );
-    BL noecho                       @ Turns off char echoing when users types a key
-    BL cbreak                       @ How ctrl+z ctrl+c are handle. raw() passes them directly to the program instead of interpreting them first
-
-    MOV r0, #FALSE                  @ Hide the cursor.
-    BL curs_set
+    INIT_NCURSES                    @ Setup ncurses.
 
     LDR r0, =stdscr
     MOV r1, #TRUE
     BL keypad                       @ Allows function keys like F1 and arrow keys
+    
+    MOV r0, #paddleHeight           @ Create a window as paddle 1
+    MOV r1, #paddleWidth
+    MOV r2, #10
+    MOV r3, #10
+    BL newwin
+    STR r0, [fp,#paddleWindow1]     @ Store the reference to it
+   
+    MOV r1, #0
+    MOV r2, #0
+    BL box
 
     BL getmaxxy   
     STR r0, [fp,#max_x]             @ max_x = r0
@@ -154,6 +182,12 @@ main:
     
     LDR r0, =BORDER             @ get the address of the boarder string. &border
     BL drawBorder
+
+    LDR r0, [fp,#paddleWindow1]
+    BL wrefresh
+    MOV r0, r4                  @ r4 is DELAY 
+    BL usleep
+    BAL .Lmain_end
     .Linf_while:
         LDR r2, =sSPACE
         DRAWBALL r5,r6,r2
@@ -181,7 +215,7 @@ main:
         ADDLE r8, r8, #1
         MOVLE r6, #1                @ and set y > 0
 
-        LDR r2, =BALL               @ get the address of teh ball string. &ball
+        LDR r2, =BALL               @ get the address of the ball string. &ball
         DRAWBALL r5,r6,r2
 
         BL refresh
@@ -192,8 +226,8 @@ main:
         CMP r0, #EXIT_KEY
     BNE .Linf_while
 
-    BL endwin
 .Lmain_end:
+    BL endwin
     MOV sp, fp
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r12,lr}
@@ -270,11 +304,36 @@ drawBorder:
         ADD r7, r7, #1
     CMP r7, r6
     BLS .Lvertical
-.Lend:
+.LdraowBorder_End:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r8,pc}
 .ENDFUNC
 
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ drawPaddle()                                    │
+@│ param(r0): int x                                │
+@│ param(r1): int y                                │
+@│ param(r2):                                      │
+@│ param(r3):                                      │
+@│ return                                          │
+@└─────────────────────────────────────────────────┘  
+.FUNC drawPaddle
+drawPaddle:
+    STMFD sp!, {r4-r8,lr}       @ Keep 8byte aligned
+
+    @BL getmaxxy
+    @MOV r4, r0                  @ max_x
+    @MOV r5, r1                  @ max_y
+    
+    MOV r0, #25
+    MOV r1, #25
+    LDR r2, =sPaddle
+    BL mvprintw
+
+.LdrawPaddle_End:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r8,pc}
+.ENDFUNC
 
 
 

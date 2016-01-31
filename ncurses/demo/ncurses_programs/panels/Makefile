@@ -20,6 +20,9 @@ ${EXE_DIR}/%: %.o
 %.o: ${SRC_DIR}/%.c
 	${CC} -o $@ -c $<
 
+c_source: panel_resize.c
+	${CC} ${LIBS} -S -std=c99 -o $<.o -c $<
+
 all:    ${EXES}
 
 
