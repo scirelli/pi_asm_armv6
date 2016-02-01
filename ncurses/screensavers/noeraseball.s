@@ -64,7 +64,7 @@ sBorder4:    .asciz "H"
 sBorder5:    .asciz "X"
 
 sBLANK:      .ascii "\0"
-sSPACE:      .asciz " "
+sSpace:      .asciz " "
 
 .ALIGN 4
 .TEXT
@@ -80,6 +80,7 @@ KEY_ESC=0x1B
 BORDER=sBorder1
 PADDLE=sPaddle
 BALL=sBall1
+SPACE=sSpace
 EXIT_KEY=KEY_ESC
 
 @############# Objects ######################
@@ -207,19 +208,26 @@ main:
         CMP r7, r8
           BLO .Lif_counter_LessThan_BoardInnerCharCnt
             ADD r0, fp, #ball2
-            moveBall
+            MOV r1, r5
+            MOV r2, r6
+            BL moveBall
+            LDR r1, =SPACE
+            BL drawBall
         .Lif_counter_LessThan_BoardInnerCharCnt:
 
-
-        LDR r2, =BALL               @ get the address of the ball string. &ball
-        DRAWBALL r5,r6,r2
+        ADD r0, fp, #ball2         @ Calculate the address of ball2
+        MOV r1, r5
+        MOV r2, r6
+        BL moveBall
+        LDR r1, =BALL
+        BL drawBall
 
         BL refresh
 
         MOV r0, r4                  @ r4 is DELAY 
         BL usleep
         BL getch
-        CMP r0, #EXIT_KEY
+    CMP r0, #EXIT_KEY
     BNE .Linf_while
 
 .Lmain_end:
@@ -333,16 +341,23 @@ drawPaddle:
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ drawBall()                                      │
-@│ param(r0): int: x position.                     │
-@│ param(r1): int: y position.                     │
-@│ param(r2): *char: The ball string.              │
+@│ param(r0): the &ball.                           │
+@│ param(r1): the ball &string.                    │
 @│ return null                                     │
 @└─────────────────────────────────────────────────┘  
 .FUNC drawBall
 drawBall:
     STMFD sp!, {r4,lr}           @ Keep 8byte aligned
+    
+    MOV r4, r1
+    LDR r2, [r0, #ball_x]
+    LDR r3, [r0, #ball_y]
 
-    DRAWBALL
+    MOV r0, r3                   @ y
+    MOV r1, r2                   @ x
+    MOV r2, r4    
+    BL mvprintw
+
 .LdrawBall_End:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
@@ -353,42 +368,50 @@ drawBall:
 @│ param(r0): &ball                                │
 @│ param(r1): max_x                                │
 @│ param(r2): max_y                                │
-@│ return (r0): null                               │
+@│ return (r0): &ball                              │
 @└─────────────────────────────────────────────────┘  
 .FUNC moveBall
 moveBall:
     STMFD sp!, {r4-r6,lr}           @ Keep 8byte aligned
     
     LDR r3, [r0, #ball_x]
-    LDR r4, [r0, #ball_vx]
+    LDR r4, [r0, #ball_vX]
     LDR r5, [r0, #ball_y]
-    LDR r6, [r0, #ball_vy]
+    LDR r6, [r0, #ball_vY]
                                 @ Move the ball in some dirction
     ADD r3, r3, r4              @ x+vx
     ADD r5, r5, r6              @ y+vy
 
-    CMP   r3, r1                @ Make sure x position stays within the screen
+    CMP r3, r1                  @ Make sure x position stays within the screen
         MVNGE r4, r4            @ Make sure x<max_x. If x>=max_x reverse direction. negate the number
         ADDGE r4, r4, #1
         SUBGE r3, r1, #1        @ and set x < max_x
+        STRGE r4, [r0, #ball_vX]
+        STRGE r3, [r0, #ball_x]
 
-    CMP r5, #0                  @ Make sure x position stays within the screen
-        MVNLE r7, r7            @ If x<=0 reverse direction
-        ADDLE r7, r7, #1        @ If x<=0 reverse direction
-        MOVLE r5, #1            @ and set x > 0
+    CMP r3, #0                  @ Make sure x position stays within the screen
+        MVNLE r4, r4            @ If x<=0 reverse direction
+        ADDLE r4, r4, #1        @ If x<=0 reverse direction
+        MOVLE r3, #1            @ and set x > 0. 0 is the border
+        STRLE r4, [r0, #ball_vX]@ Write it back to the ball
+        STRLE r3, [r0, #ball_x]
 
-    CMP r6, r10                 @ Make sure y position stays within the screen
-        MVNGE r8, r8            @ If y>= max_y reverse direction
-        ADDGE r8, r8, #1
-        SUBGE r6, r10, #1       @ set y<max_y
+    CMP r5, r2                  @ Make sure y position stays within the screen
+        MVNGE r6, r6            @ If y>= max_y reverse direction
+        ADDGE r6, r6, #1
+        SUBGE r5, r2, #1       @ set y<max_y
+        STRGE r6, [r0, #ball_vY]
+        STRGE r5, [r0, #ball_y]
 
-    CMP r6, #0                  @ Make sure y position stays within the screen
-        MVNLE r8, r8            @ If y<=0 reverse direction
-        ADDLE r8, r8, #1
-        MOVLE r6, #1            @ and set y > 0
+    CMP r5, #0                  @ Make sure y position stays within the screen
+        MVNLE r6, r6            @ If y<=0 reverse direction
+        ADDLE r6, r6, #1
+        MOVLE r5, #1            @ and set y > 0
+        STRLE r6, [r0, #ball_vY]
+        STRLE r5, [r0, #ball_y]
 .LmoveBall_End:
  @─────────────────────────────────────────────────
-    LDMFD sp!, {r4,pc}
+    LDMFD sp!, {r4-r6,pc}
 .ENDFUNC
 
 
