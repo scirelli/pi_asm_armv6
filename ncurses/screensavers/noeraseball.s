@@ -155,14 +155,14 @@ main:
     STMDB fp, {r0-r3}               @ Store it. with out write back, so fp does not move.
                                     @ STMDB = STMFD. When this is written it's written r5,r4,r3,r2,r1,r0 in memory. This then looks correct when looking up from the sp. SP see the values from r0,r1,r2,r3,r4,r5
     
-    ADD r0, fp, #ball1              @ &ball1
+    ADD r0, fp, #boardInnerCharCnt  @ &ball1
     MOV r1, #1                      @ vy
     MOV r2, #1                      @ vx
     MOV r3, #0                      @ y
     MOV r4, #0                      @ x
-    STMFD r0, {r1,r2,r3,r4}
+    STMFD r0, {r1,r2,r3,r4}         @ TODO:fix this
 
-    ADD r0, fp, #ball2              @ &ball2
+    ADD r0, fp, #ball1              @ &ball2
     MOV r1, #1                      @ vy
     MOV r2, #1                      @ vx
     MOV r3, #0                      @ y
