@@ -155,19 +155,19 @@ main:
     STMDB fp, {r0-r3}               @ Store it. with out write back, so fp does not move.
                                     @ STMDB = STMFD. When this is written it's written r5,r4,r3,r2,r1,r0 in memory. This then looks correct when looking up from the sp. SP see the values from r0,r1,r2,r3,r4,r5
     
-    ADD r0, fp, #boardInnerCharCnt  @ &ball1
-    MOV r1, #1                      @ vy
-    MOV r2, #1                      @ vx
-    MOV r3, #0                      @ y
-    MOV r4, #0                      @ x
-    STMFD r0, {r1,r2,r3,r4}         @ TODO:fix this
+    ADD r0, fp, #ball1              @ &ball1
+    MOV r1, #0                      @ x
+    MOV r2, #0                      @ y
+    MOV r3, #1                      @ vx
+    MOV r4, #1                      @ vy
+    STMEA r0, {r1,r2,r3,r4}         @ TODO:fix this
 
-    ADD r0, fp, #ball1              @ &ball2
-    MOV r1, #1                      @ vy
-    MOV r2, #1                      @ vx
-    MOV r3, #0                      @ y
-    MOV r4, #0                      @ x
-    STMFD r0, {r1,r2,r3,r4}
+    ADD r0, fp, #ball2              @ &ball2
+    MOV r1, #1                      @ x
+    MOV r2, #1                      @ y
+    MOV r3, #1                      @ vx
+    MOV r4, #1                      @ vy
+    STMEA r0, {r1,r2,r3,r4}
 
     LDR r4, =DELAY                  @ Loads the delay time. &delay
     LDR r4, [r4]                    @ Get delay's value.
@@ -215,7 +215,7 @@ main:
             BL drawBall
         .Lif_counter_LessThan_BoardInnerCharCnt:
 
-        ADD r0, fp, #ball2         @ Calculate the address of ball2
+        ADD r0, fp, #ball1         @ Calculate the address of ball2
         MOV r1, r5
         MOV r2, r6
         BL moveBall
@@ -224,9 +224,13 @@ main:
 
         BL refresh
 
-        MOV r0, r4                  @ r4 is DELAY 
+        MOV r0, r4                 @ r4 is DELAY 
         BL usleep
         BL getch
+        
+        ADDS  r7, r7, #1             @counter++
+        MOVVS r7, #0
+
     CMP r0, #EXIT_KEY
     BNE .Linf_while
 
@@ -381,6 +385,8 @@ moveBall:
                                 @ Move the ball in some dirction
     ADD r3, r3, r4              @ x+vx
     ADD r5, r5, r6              @ y+vy
+    STR r3, [r0, #ball_x]       @ x=x+vx
+    STR r5, [r0, #ball_y]       @ y=y+vy
 
     CMP r3, r1                  @ Make sure x position stays within the screen
         MVNGE r4, r4            @ Make sure x<max_x. If x>=max_x reverse direction. negate the number
