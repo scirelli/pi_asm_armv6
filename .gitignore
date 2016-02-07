@@ -1,2 +1,4 @@
 *.o
 ncurses_program/demo/exe/
+win_border2
+noeraseball
