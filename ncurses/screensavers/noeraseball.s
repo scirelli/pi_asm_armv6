@@ -77,18 +77,19 @@ KEY_ESC=0x1B
 
 
 @ Alias some stuff
-BORDER=sBorder1
+BORDER=0x23
 PADDLE=sPaddle
-BALL=sBall1
-SPACE=sSpace
+BALL=0x4F
+SPACE=0x20
 EXIT_KEY=KEY_ESC
 
 @############# Objects ######################
-@ Ball sizeOf(Ball) = 16
+Ball_sz=20 @ sizeOf(Ball) = 20
 ball_x=0
 ball_y=4
 ball_vX=8
 ball_vY=12
+ball_char=16
 @############################################
 
 @############# Macros ######################
@@ -125,6 +126,9 @@ ball_vY=12
 .ENDM
 @###########################################
 
+.ALIGN	2
+.Lstdscr: .WORD stdscr
+
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ main()                                          │
 @│ param(r0): length of the argv array.            │
@@ -139,14 +143,14 @@ main:
     STMFD sp!, {r4-r12,lr}          @ Keep 8byte aligned
     MOV fp, sp
                                     @ max_x,max_y,counter,boardInnerCharCnt
-    SUB sp, sp, #48                 @ Make room for max_y and max_x, dir_x, dir_y, counter, and boardInnerCharCnt. See EOF for pic of the stack, for a refresher.
+    SUB sp, sp, #56                 @ Make room for max_y and max_x, dir_x, dir_y, counter, and boardInnerCharCnt. See EOF for pic of the stack, for a refresher.
                                     @ fp-4 = max_x; fp-8 = max_y
                                     @ fp-12 = counter; fp-16 = boardInnerCharCnt
-                                    @ fp-32 = ball1; fp-48 = ball2
+                                    @ fp-36 = ball1; fp-56 = ball2
     max_x=-4;  max_y=-8;            @ Create constants for offsets of the variables from the fp
     counter=-12;
     boardInnerCharCnt=-16;
-    ball1=-32; ball2=-48; 
+    ball1=-36; ball2=-56; 
                                     @ Initcialize the vairables
     MOV   r0, #0                    @ boardInnerCharCnt = 0;
     MOV   r1, #0                    @ counter = 0;
@@ -160,21 +164,24 @@ main:
     MOV r2, #0                      @ y
     MOV r3, #1                      @ vx
     MOV r4, #1                      @ vy
-    STMEA r0, {r1,r2,r3,r4}         @ TODO:fix this
+    MOV r5, #BALL                   @ Ball char
+    STMEA r0, {r1,r2,r3,r4,r5}
 
     ADD r0, fp, #ball2              @ &ball2
-    MOV r1, #1                      @ x
-    MOV r2, #1                      @ y
+    MOV r1, #0                      @ x
+    MOV r2, #0                      @ y
     MOV r3, #1                      @ vx
     MOV r4, #1                      @ vy
-    STMEA r0, {r1,r2,r3,r4}
+    MOV r5, #SPACE                  @ Ball char
+    STMEA r0, {r1,r2,r3,r4,r5}
 
     LDR r4, =DELAY                  @ Loads the delay time. &delay
     LDR r4, [r4]                    @ Get delay's value.
 
     INIT_NCURSES                    @ Setup ncurses.
 
-    LDR r0, =stdscr                 @stdscr is the default window created by the library. Whenever a window is not referenced the library assumes stdscr
+    LDR r0, .Lstdscr               @stdscr is the default window created by the library. Whenever a window is not referenced the library assumes stdscr
+    LDR r0, [r0]
     MOV r1, #TRUE
     BL keypad                       @ Allows function keys like F1 and arrow keys
     
@@ -184,6 +191,10 @@ main:
     MOV r5, r0                      @ max_x
     MOV r6, r1                      @ max_y
 
+    ADD r0, fp, #ball2              @ &ball2
+    MOV r1, #-1
+    STR r5, [r0, #ball_x]
+    STR r1, [r0, #ball_vY]
                                     @ Get the number of characters inside the boarder
     SUB r0, r5, #1                  @ Don't include the border
     SUB r1, r6, #1
@@ -197,13 +208,26 @@ main:
 
     BL clear
     
-    LDR r0, =BORDER                 @ get the address of the boarder string. &border
-    BL drawBorder
-    
+    @LDR r0, =BORDER                 @ get the address of the boarder string. &border
+    @BL drawBorder
+
+    LDR r0, .Lstdscr
+    LDR r0, [r0]
+    MOV r1, #0
+    MOV r2, #0
+    MOV r3, #0
+    STR r3, [sp, #-4]!
+    STR r3, [sp, #-4]!
+    STR r3, [sp, #-4]!
+    STR r3, [sp, #-4]!
+    STR r3, [sp, #-4]!             @             1       2    3    4   5   6   7   8   9
+    BL wborder                     @ wborder(local_win, ' ', ' ', ' ',' ',' ',' ',' ',' ');
+    @BL box     
+
     LDR r7, [fp,#counter]
     LDR r8, [fp,#boardInnerCharCnt]
 
-                                    @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
+                                   @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
     .Linf_while:
         CMP r7, r8
           BLO .Lif_counter_LessThan_BoardInnerCharCnt
@@ -211,7 +235,6 @@ main:
             MOV r1, r5
             MOV r2, r6
             BL moveBall
-            LDR r1, =SPACE
             BL drawBall
         .Lif_counter_LessThan_BoardInnerCharCnt:
 
@@ -219,7 +242,6 @@ main:
         MOV r1, r5
         MOV r2, r6
         BL moveBall
-        LDR r1, =BALL
         BL drawBall
 
         BL refresh
@@ -228,8 +250,8 @@ main:
         BL usleep
         BL getch
         
-        ADDS  r7, r7, #1             @counter++
-        MOVVS r7, #0
+        ADDS  r7, r7, #1           @counter++
+            MOVVS r7, #0           @MOV if overflow
 
     CMP r0, #EXIT_KEY
     BNE .Linf_while
@@ -286,12 +308,14 @@ drawBorder:
         MOV r0, #0  @ y
         MOV r1, r7  @ x
         MOV r2, r4
-        BL mvprintw
+        @BL mvprintw
+        BL mvaddch
 
         MOV r0, r6  @ y
         MOV r1, r7  @ x
         MOV r2, r4
-        BL mvprintw
+        @BL mvprintw
+        BL mvaddch
 
         ADD r7, r7, #1
     CMP r7, r5
@@ -302,12 +326,14 @@ drawBorder:
         MOV r0, r7  @ y
         MOV r1, #0  @ x
         MOV r2, r4
-        BL mvprintw
+        @BL mvprintw
+        BL mvaddch
 
         MOV r0, r7  @ y
         MOV r1, r5  @ x
         MOV r2, r4
-        BL mvprintw
+        @BL mvprintw
+        BL mvaddch
 
         ADD r7, r7, #1
     CMP r7, r6
@@ -346,21 +372,20 @@ drawPaddle:
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ drawBall()                                      │
 @│ param(r0): the &ball.                           │
-@│ param(r1): the ball &string.                    │
 @│ return null                                     │
 @└─────────────────────────────────────────────────┘  
 .FUNC drawBall
 drawBall:
     STMFD sp!, {r4,lr}           @ Keep 8byte aligned
     
-    MOV r4, r1
+    LDR r4, [r0, #ball_char]
     LDR r2, [r0, #ball_x]
     LDR r3, [r0, #ball_y]
 
     MOV r0, r3                   @ y
     MOV r1, r2                   @ x
     MOV r2, r4    
-    BL mvprintw
+    BL mvaddch
 
 .LdrawBall_End:
  @─────────────────────────────────────────────────
