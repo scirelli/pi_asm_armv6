@@ -5,7 +5,7 @@
 .balign 4
 .data
 .section	.rodata
-DELAY:      .word 30000
+DELAY:      .word 1
 
 Balls:
 sBall1:     .asciz "O"
@@ -75,6 +75,18 @@ KEY_EXIT=0551
 KEY_SPACE=0x20
 KEY_ESC=0x1B
 
+COLOR_BLACK=0
+COLOR_RED=1
+COLOR_GREEN=2
+COLOR_YELLOW=3
+COLOR_BLUE=4
+COLOR_MAGENTA=5
+COLOR_CYAN=6
+COLOR_WHITE=7
+
+@#define NCURSES_ATTR_SHIFT       8
+@#define NCURSES_BITS(mask,shift) ((mask) << ((shift) + NCURSES_ATTR_SHIFT))
+@#define COLOR_PAIR(n)	NCURSES_BITS(n, 0)
 
 @ Alias some stuff
 BORDER=0x23
@@ -193,7 +205,7 @@ main:
 
     ADD r0, fp, #ball2              @ &ball2
     MOV r1, #-1
-    STR r5, [r0, #ball_x]
+    STR r6, [r0, #ball_y]
     STR r1, [r0, #ball_vY]
                                     @ Get the number of characters inside the boarder
     SUB r0, r5, #1                  @ Don't include the border
