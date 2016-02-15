@@ -176,6 +176,7 @@ main:
                                    @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
     .Linf_while:
         ADD r0, fp, #ball1         @ Calculate the address of ball2
+        BL eraseBall
         MOV r1, r5
         MOV r2, r6
         BL moveBall
@@ -185,8 +186,15 @@ main:
 
         MOV r0, r4                 @ r4 is DELAY 
         BL usleep
+
         BL getch
-        
+        STR r0, [sp,#-4]!
+        MOV r2, r0                 @ char
+        SUB r0, r6, #1             @ y
+        SUB r1, r5, #1            @ x
+        BL mvaddch
+        LDR r0, [sp], #4
+
     CMP r0, #EXIT_KEY
     BNE .Linf_while
 
@@ -312,11 +320,11 @@ moveBall:
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ drawBall()                                      │
 @│ param(r0): the &ball.                           │
-@│ return null                                     │
+@│ return &ball                                    │
 @└─────────────────────────────────────────────────┘  
 .FUNC drawBall
 drawBall:
-    STMFD sp!, {r4,lr}           @ Keep 8byte aligned
+    STMFD sp!, {r0,r4,r5,lr}           @ Keep 8byte aligned
     
     LDR r4, [r0, #ball_char]
     LDR r2, [r0, #ball_x]
@@ -329,7 +337,29 @@ drawBall:
 
 .LdrawBall_End:
  @─────────────────────────────────────────────────
-    LDMFD sp!, {r4,pc}
+    LDMFD sp!, {r0,r4,r5,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ eraseBall()                                     │
+@│ param(r0): the &ball.                           │
+@│ return &ball                                    │
+@└─────────────────────────────────────────────────┘  
+.FUNC eraseBall
+eraseBall:
+    STMFD sp!, {r0,r4,r5,lr}           @ Keep 8byte aligned
+    
+    MOV r4, #KEY_SPACE
+    LDR r2, [r0, #ball_x]
+    LDR r3, [r0, #ball_y]
+
+    MOV r0, r3                   @ y
+    MOV r1, r2                   @ x
+    MOV r2, r4    
+    BL mvaddch
+.LeraseBall_End:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r0,r4,r5,pc}
 .ENDFUNC
 
 @####################################################################################
