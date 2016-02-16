@@ -56,13 +56,14 @@ ball_char=16
 @┍━━━━━━━━━━━━━━━━┑
 @│ Paddle         │
 @└────────────────┘  
-Paddle_sz=24 @ sizeOf(Paddle)
+Paddle_sz=28 @ sizeOf(Paddle)
 paddle_x=0
 paddle_y=4
 paddle_vX=8
 paddle_vY=12
-paddle_char=16
-paddle_corners_char=20
+paddle_window=16
+paddle_char=20
+paddle_corners_char=24
 @###########################################
 
 @############# Macros ######################
@@ -105,7 +106,7 @@ main:
                                     @ fp-4 = max_x; fp-8 = max_y
                                     @ fp-12 = counter;
                                     @ fp-32 = ball1; 
-                                    @ fp-56 = paddle1; fp-80 = paddle2;
+                                    @ fp-60 = paddle1; fp-84 = paddle2;
     max_x=-4;  max_y=-8;            @ Create constants for offsets of the variables from the fp
     counter=-12;
     boardInnerCharCnt=-16;
@@ -121,7 +122,7 @@ main:
     
     INIT_NCURSES                    @ Setup ncurses.
 
-    LDR r0, .Lstdscr               @stdscr is the default window created by the library. Whenever a window is not referenced the library assumes stdscr
+    LDR r0, .Lstdscr                @ stdscr is the default window created by the library. Whenever a window is not referenced the library assumes stdscr
     LDR r0, [r0]
     MOV r1, #TRUE
     BL keypad                       @ Allows function keys like F1 and arrow keys
@@ -138,8 +139,8 @@ main:
     MUL r2, r0, r1
     STR r2, [fp, #boardInnerCharCnt]
     
-    MOV r1, r5, LSR #1               @ x=max_x/2
-    MOV r2, r6, LSR #1               @ y=max_y/2
+    MOV r1, r5, LSR #1              @ x=max_x/2
+    MOV r2, r6, LSR #1              @ y=max_y/2
     ADD r0, fp, #ball1              @ &ball1
     MOV r3, #1                      @ vx
     MOV r4, #1                      @ vy
@@ -147,16 +148,10 @@ main:
     STMEA r0, {r1,r2,r3,r4,r5}
 
     ADD r0, fp, #paddle1            @ &paddle1
-    MOV r1, #5                      @ x
-    MOV r3, #1                      @ vx
-    MOV r4, #1                      @ vy
-    STMEA r0, {r1,r2,r3,r4}
+    BL initPaddle
 
     ADD r0, fp, #paddle2            @ &paddle2
-    MOV r1, #5                      @ x
-    MOV r3, #1                      @ vx
-    MOV r4, #1                      @ vy
-    STMEA r0, {r1,r2,r3,r4}
+    BL initPaddle
 
     BL clear
 
@@ -172,6 +167,9 @@ main:
     LDR r6, [fp,#max_y]
     LDR r7, [fp,#counter]
     LDR r8, [fp,#boardInnerCharCnt]
+
+    ADD r0, fp, #16-56
+    wrefresh
 
                                    @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
     .Linf_while:
@@ -191,7 +189,7 @@ main:
         STR r0, [sp,#-4]!
         MOV r2, r0                 @ char
         SUB r0, r6, #1             @ y
-        SUB r1, r5, #1            @ x
+        SUB r1, r5, #1             @ x
         BL mvaddch
         LDR r0, [sp], #4
 
@@ -228,6 +226,42 @@ getmaxxy:
 .Lgetmaxxy_end:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ initPaddle()                                    │
+@│ param(r0): &paddle                              │
+@│ return (r0): &paddle                            │
+@└─────────────────────────────────────────────────┘  
+.FUNC initPaddle
+initPaddle:
+    STMFD sp!, {r0,r4-r8,lr}        @ Keep 8byte aligned
+    
+    MOV r8, r0                      @ back up paddle object
+    MOV r0, #5                      @ newwin(height, width, starty, startx);
+    MOV r1, #2
+    MOV r2, #5
+    MOV r3, #5
+    BL newwin
+
+    MOV r1, #5                      @ paddle_x
+    MOV r2, #5                      @ paddle_y
+    MOV r3, #1                      @ paddle_vX
+    MOV r4, #1                      @ paddle_vY
+    MOV r5, r0                      @ paddle_window 
+    MOV r6, #NULL                   @ paddle_char
+    MOV r7, #NULL                   @ paddle_corners_char
+    STMEA r8, {r1-r7}
+
+    MOV r1, #0                      @ box(local_win, 0 , 0); 0, 0 gives default characters for the vertical and horizontal lines
+    MOV r2, #0
+    BL box
+
+    MOV r0, r5                      @ wrefresh(local_win); Show that box
+    BL wrefresh
+.LinitPaddle_End:
+@─────────────────────────────────────────────────
+    LDMFD sp!, {r0,r4-r8,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
