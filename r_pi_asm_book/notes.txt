@@ -721,6 +721,12 @@ These instructions normally take one of three forms as shown below
     @└─────────────────────────────────────────────────────────────┘
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ Pregix Operators               │
+@└────────────────────────────────┘
+- For negative numbers.
+~ For bitwise not.
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ Vector Instructions            │
 @└────────────────────────────────┘
 ## Make sure you pass the flag -mfpu=vfpv2 to as, otherwise it will not recognize the VFPv2 instructions. ##

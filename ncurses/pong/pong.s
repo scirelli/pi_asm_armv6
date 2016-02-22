@@ -5,7 +5,7 @@
 .balign 4
 .data
 .section	.rodata
-DELAY:      .word 30000
+DELAY:      .word 30000           @ 0.03s micro secondsi 10^-6 = 0.000001 
 
 Balls:
 
@@ -101,17 +101,16 @@ TRUE=1
 main:
     STMFD sp!, {r4-r12,lr}          @ Keep 8byte aligned
     MOV fp, sp
-                                    @ max_x,max_y,counter
-    SUB sp, sp, #84                 @ Make room for max_y and max_x, counter, boardInnerCharCnt, ball1, paddle1, and paddle2. See EOF for pic of the stack, for a refresher.
-                                    @ fp-4 = max_x; fp-8 = max_y
-                                    @ fp-12 = counter;
-                                    @ fp-32 = ball1; 
-                                    @ fp-60 = paddle1; fp-84 = paddle2;
-    max_x=-4;  max_y=-8;            @ Create constants for offsets of the variables from the fp
-    counter=-12;
-    boardInnerCharCnt=-16;
-    ball1=-32; 
-    paddle1=-56; paddle2=-80;
+
+                                    @ Create constants for offsets of the variables from the fp
+    max_x=-4;  max_y=-8;            @ fp-4  = max_x; fp-8 = max_y         
+    counter=-12;                    @ fp-12 = counter;
+    boardInnerCharCnt=-16;          @ fp-16 = boardInnerCharCnt
+    ball1=-44;                      @ fp-44 = ball1; 
+    paddle1=-72; paddle2=-100;      @ fp-72 = paddle1; fp-100 = paddle2;
+
+    ADD sp, sp, #paddle2            @ Make room for max_y and max_x, counter, boardInnerCharCnt, ball1, paddle1, and paddle2. See EOF for pic of the stack, for a refresher.
+
                                     @ Initcialize the vairables
     MOV   r0, #0                    @ boardInnerCharCnt = 0;
     MOV   r1, #0                    @ counter = 0;
@@ -168,8 +167,14 @@ main:
     LDR r7, [fp,#counter]
     LDR r8, [fp,#boardInnerCharCnt]
 
-    ADD r0, fp, #16-56
-    wrefresh
+LDR r0, [fp, #paddle_window+paddle1]
+BL wnoutrefresh               @ wnoutrefresh(win)
+BL doupdate                   @ doupdate()  
+@ BL wrefresh
+
+MOV r0, #1
+MOV r0, r0, LSL #20            @ ~1s
+BL usleep                      @
 
                                    @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
     .Linf_while:
@@ -183,7 +188,7 @@ main:
         BL refresh
 
         MOV r0, r4                 @ r4 is DELAY 
-        BL usleep
+        BL usleep                  @ usleep - suspend execution for microsecond intervals
 
         BL getch
         STR r0, [sp,#-4]!
@@ -258,7 +263,7 @@ initPaddle:
     BL box
 
     MOV r0, r5                      @ wrefresh(local_win); Show that box
-    BL wrefresh
+    @BL wrefresh
 .LinitPaddle_End:
 @─────────────────────────────────────────────────
     LDMFD sp!, {r0,r4-r8,pc}
