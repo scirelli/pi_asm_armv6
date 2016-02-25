@@ -42,6 +42,10 @@ BALL=0x4F
 SPACE=0x20
 EXIT_KEY=KEY_ESC
 
+@ Type Sizes
+int=4
+char=4
+
 @############ Objects ######################
 @┍━━━━━━━━━━━━━━━━┑
 @│ Ball           │
@@ -56,14 +60,26 @@ ball_char=16
 @┍━━━━━━━━━━━━━━━━┑
 @│ Paddle         │
 @└────────────────┘  
-Paddle_sz=28 @ sizeOf(Paddle)
+Paddle_sz=32 @ sizeOf(Paddle)
 paddle_x=0
 paddle_y=4
 paddle_vX=8
 paddle_vY=12
 paddle_window=16
 paddle_char=20
-paddle_corners_char=24
+paddle_corners_chars=24
+paddle_sides_chars=28
+
+@ Position from paddle corners
+paddle_ls=1
+paddle_rs=2
+paddle_ts=3
+paddle_bs=4
+@ Position from paddle sides
+paddle_tl=paddle_ls
+paddle_tr=paddle_rs
+paddle_bl=paddle_ts
+paddle_br=paddle_bs
 @###########################################
 
 @############# Macros ######################
@@ -101,13 +117,14 @@ TRUE=1
 main:
     STMFD sp!, {r4-r12,lr}          @ Keep 8byte aligned
     MOV fp, sp
-
                                     @ Create constants for offsets of the variables from the fp
-    max_x=-4;  max_y=-8;            @ fp-4  = max_x; fp-8 = max_y         
-    counter=-12;                    @ fp-12 = counter;
-    boardInnerCharCnt=-16;          @ fp-16 = boardInnerCharCnt
-    ball1=-44;                      @ fp-44 = ball1; 
-    paddle1=-72; paddle2=-100;      @ fp-72 = paddle1; fp-100 = paddle2;
+    max_x=-int;
+    max_y=max_x-int;                @ fp-4  = max_x; fp-8 = max_y         
+    counter=max_y-int;              @ fp-12 = counter;
+    boardInnerCharCnt=counter-int;  @ fp-16 = boardInnerCharCnt
+    ball1=boardInnerCharCnt-Ball_sz;@ fp-44 = ball1;
+    paddle1=ball1-Paddle_sz;        @ fp-76 = paddle1;
+    paddle2=paddle1-Paddle_sz;      @ fp-104 = paddle2;
 
     ADD sp, sp, #paddle2            @ Make room for max_y and max_x, counter, boardInnerCharCnt, ball1, paddle1, and paddle2. See EOF for pic of the stack, for a refresher.
 
