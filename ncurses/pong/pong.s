@@ -60,15 +60,14 @@ ball_char=16
 @┍━━━━━━━━━━━━━━━━┑
 @│ Paddle         │
 @└────────────────┘  
-Paddle_sz=32 @ sizeOf(Paddle)
+Paddle_sz=28 @ sizeOf(Paddle)
 paddle_x=0
 paddle_y=4
 paddle_vX=8
 paddle_vY=12
 paddle_window=16
-paddle_char=20
-paddle_corners_chars=24
-paddle_sides_chars=28
+paddle_corners_chars=20
+paddle_sides_chars=24
 
 @ Position from paddle corners
 paddle_ls=1
@@ -171,7 +170,7 @@ main:
 
     BL clear
 
-    LDR r0, .Lstdscr
+    LDR r0, .Lstdscr                @ Draw the Screen border
     LDR r0, [r0]
     MOV r1, #0
     MOV r2, #0
@@ -183,15 +182,6 @@ main:
     LDR r6, [fp,#max_y]
     LDR r7, [fp,#counter]
     LDR r8, [fp,#boardInnerCharCnt]
-
-LDR r0, [fp, #paddle_window+paddle1]
-BL wnoutrefresh               @ wnoutrefresh(win)
-BL doupdate                   @ doupdate()  
-@ BL wrefresh
-
-MOV r0, #1
-MOV r0, r0, LSL #20            @ ~1s
-BL usleep                      @
 
                                    @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
     .Linf_while:
@@ -289,14 +279,25 @@ initPaddle:
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ movePaddle()                                    │
 @│ param(r0): &paddle                              │
-@│ param(r1): max_x                                │
-@│ param(r2): max_y                                │
+@│ param(r1): direction                            │
+@│ param(r2): max_x                                │
+@│ param(r3): max_y                                │
 @│ return (r0): &paddle                            │
 @└─────────────────────────────────────────────────┘  
 .FUNC movePaddle
 movePaddle:
     STMFD sp!, {r4-r6,lr}           @ Keep 8byte aligned
     
+    LDR r4, [r0, #paddle_vY]        @ Increment y by vY
+    LDR r5, [r0, #paddle_y]
+    SMLAL r5, r4, r1                @ Mul by direction add it to y
+
+    CMP r5, r3
+        MOVHI r5, r3
+    CMP r5, #1
+        MOVLO r5, #1
+
+    STR r4, [r0, #paddle_y]
 .LmovePaddle_End:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r6,pc}
