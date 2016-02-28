@@ -182,6 +182,12 @@ main:
     LDR r6, [fp,#max_y]
     LDR r7, [fp,#counter]
     LDR r8, [fp,#boardInnerCharCnt]
+    
+    LDR r0, [fp, #paddle1]
+    MOV r1, #1
+    MOV r2, r5
+    MOV r3, r6
+    BL movePaddle
 
                                    @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
     .Linf_while:
@@ -280,8 +286,7 @@ initPaddle:
 @│ movePaddle()                                    │
 @│ param(r0): &paddle                              │
 @│ param(r1): direction                            │
-@│ param(r2): max_x                                │
-@│ param(r3): max_y                                │
+@│ param(r2): max_y                                │
 @│ return (r0): &paddle                            │
 @└─────────────────────────────────────────────────┘  
 .FUNC movePaddle
@@ -292,8 +297,8 @@ movePaddle:
     LDR r5, [r0, #paddle_y]
     SMLAL r5, r4, r1                @ Mul by direction add it to y
 
-    CMP r5, r3
-        MOVHI r5, r3
+    CMP r5, r2
+        MOVHI r5, r2
     CMP r5, #1
         MOVLO r5, #1
 
