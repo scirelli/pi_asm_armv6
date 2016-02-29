@@ -6,7 +6,8 @@
 .data
 .section	.rodata
 DELAY:      .word 30000           @ 0.03s micro secondsi 10^-6 = 0.000001 
-
+PADDLE_CORNERS: .word 0x2B2B2B2B
+PADDLE_SIDES: .word 0x2D2D7C7C
 Balls:
 
 Paddles:
@@ -60,7 +61,7 @@ ball_char=16
 @┍━━━━━━━━━━━━━━━━┑
 @│ Paddle         │
 @└────────────────┘  
-Paddle_sz=28 @ sizeOf(Paddle)
+Paddle_sz=36 @ sizeOf(Paddle)
 paddle_x=0
 paddle_y=4
 paddle_vX=8
@@ -68,6 +69,8 @@ paddle_vY=12
 paddle_window=16
 paddle_corners_chars=20
 paddle_sides_chars=24
+paddle_width=28
+paddle_height=32
 
 @ Position from paddle corners
 paddle_ls=1
@@ -183,12 +186,17 @@ main:
     LDR r7, [fp,#counter]
     LDR r8, [fp,#boardInnerCharCnt]
     
-    LDR r0, [fp, #paddle1]
+    ADD r0, fp, #paddle1
     MOV r1, #1
     MOV r2, r5
     MOV r3, r6
     BL movePaddle
+    BL drawPaddle
+    BL refresh
 
+    MOV r1, #0x02
+    MOV r0, r1, LSL #24
+    BL usleep
                                    @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
     .Linf_while:
         ADD r0, fp, #ball1         @ Calculate the address of ball2
@@ -249,15 +257,18 @@ getmaxxy:
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ initPaddle()                                    │
 @│ param(r0): &paddle                              │
+@│ param(r1): paddle width                         │
+@│ param(r2): paddle height                        │
 @│ return (r0): &paddle                            │
 @└─────────────────────────────────────────────────┘  
 .FUNC initPaddle
 initPaddle:
-    STMFD sp!, {r0,r4-r8,lr}        @ Keep 8byte aligned
-    
-    MOV r8, r0                      @ back up paddle object
+    STMFD sp!, {r0,r4-r10,fp,lr}    @ Keep 8byte aligned
+
+    MOV r10, r0
+
     MOV r0, #5                      @ newwin(height, width, starty, startx);
-    MOV r1, #2
+    MOV r1, #15
     MOV r2, #5
     MOV r3, #5
     BL newwin
@@ -267,19 +278,24 @@ initPaddle:
     MOV r3, #1                      @ paddle_vX
     MOV r4, #1                      @ paddle_vY
     MOV r5, r0                      @ paddle_window 
-    MOV r6, #NULL                   @ paddle_char
-    MOV r7, #NULL                   @ paddle_corners_char
-    STMEA r8, {r1-r7}
+    LDR r6, =PADDLE_CORNERS
+    LDR r6, [r6]                    @ paddle_corners_chars
+    LDR r7, =PADDLE_SIDES
+    LDR r7, [r7]                    @ paddle_sides_chars
+    MOV r8, #3                      @ paddle_width
+    MOV r9, #7                      @ paddle_height
+    STMEA r10, {r1-r9}
 
     MOV r1, #0                      @ box(local_win, 0 , 0); 0, 0 gives default characters for the vertical and horizontal lines
     MOV r2, #0
     BL box
 
-    MOV r0, r5                      @ wrefresh(local_win); Show that box
+    @MOV r0, r5                      @ wrefresh(local_win); Show that box
     @BL wrefresh
+    MOV r0, r10
 .LinitPaddle_End:
 @─────────────────────────────────────────────────
-    LDMFD sp!, {r0,r4-r8,pc}
+    LDMFD sp!, {r0,r4-r10,fp,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -295,14 +311,14 @@ movePaddle:
     
     LDR r4, [r0, #paddle_vY]        @ Increment y by vY
     LDR r5, [r0, #paddle_y]
-    SMLAL r5, r4, r1                @ Mul by direction add it to y
+    MLA r5, r4, r1, r5              @ Mul by direction add it to y
 
     CMP r5, r2
         MOVHI r5, r2
     CMP r5, #1
         MOVLO r5, #1
 
-    STR r4, [r0, #paddle_y]
+    STR r5, [r0, #paddle_y]
 .LmovePaddle_End:
  @─────────────────────────────────────────────────
     LDMFD sp!, {r4-r6,pc}
@@ -310,20 +326,45 @@ movePaddle:
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ drawPaddle()                                    │
-@│ param(r0): int x                                │
-@│ param(r1): int y                                │
-@│ param(r2):                                      │
-@│ param(r3):                                      │
-@│ return                                          │
+@│ param(r0): &paddle                              │
+@│ return: &paddle                                 │
 @└─────────────────────────────────────────────────┘  
 .FUNC drawPaddle
 drawPaddle:
-    STMFD sp!, {r4-r8,lr}       @ Keep 8byte aligned
+    STMFD sp!, {r4-r7,fp,lr}       @ Keep 8byte aligned
+    MOV fp, sp 
 
+    MOV r5, r0
+
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_x]
+    LDRB r2, [r5, #paddle_corners_chars + paddle_ts] 
+    LDR  r3, [r5, #paddle_width]
+    BL mvhline                                           @ mvhline(y, x, p_win->border.ts, w);
+
+    @ mvhline(y + h, x + 1, p_win->border.bs, w - 1);
+    @ mvvline(y + 1, x, p_win->border.ls, h - 1);
+    @ mvvline(y + 1, x + w, p_win->border.rs, h - 1);
+
+    @LDR  r0, [r5, #paddle_y]
+    @LDR  r1, [r5, #paddle_x]
+    @LDRB r2, [r5, #paddle_corners_chars + paddle_tl] 
+    @BL mvaddch                                           @ mvaddch(y, x, p_win->border.tl);
+    
+    @LDR r0, [r5, #paddle_y]
+    @LDR r1, [r5, #paddle_x]
+    @LDR r3, [r5, #paddle_width]
+    @ADD r1, r1, r3
+    @LDRB r2, [r5, #paddle_corners_chars + paddle_tr] 
+    @BL mvaddch                                           @ mvaddch(y, x + w, p_win->border.tr);
+
+    @ mvaddch(y + h, x + w, p_win->border.br);
+    @ mvaddch(y + h, x, p_win->border.bl);
 
 .LdrawPaddle_End:
  @─────────────────────────────────────────────────
-    LDMFD sp!, {r4-r8,pc}
+    MOV sp, fp
+    LDMFD sp!, {r4-r7,fp,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
@@ -428,6 +469,17 @@ eraseBall:
 @##################################### Notes ########################################
 @####################################################################################
 @
+@ 
+@ 
+@ 
+@ wmove(result, 0, 0);
+@ touchwin(win);
+@ wnoutrefresh(win);
+@ doupdate();
+@ 
+@ 
+@ wsyncdown(win);
+@ 
 @ 
 @ Bit=1, Nibble = 4bits, Byte = 8bits, Halfword = 16bits, Word = 32bits, Doubleword = 64bits*/
 @ Memory is address in byte blocks
