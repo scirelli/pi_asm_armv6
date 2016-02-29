@@ -6,8 +6,8 @@
 .data
 .section	.rodata
 DELAY:      .word 30000           @ 0.03s micro secondsi 10^-6 = 0.000001 
-PADDLE_CORNERS: .word 0x2B2B2B2B
-PADDLE_SIDES: .word 0x2D2D7C7C
+PADDLE_CORNERS: .word 0x2B2B2B2B  @ 2B
+PADDLE_SIDES: .word 0x2D2D7C7C    @ 2D -, 7C |
 Balls:
 
 Paddles:
@@ -73,10 +73,10 @@ paddle_width=28
 paddle_height=32
 
 @ Position from paddle corners
-paddle_ls=1
-paddle_rs=2
-paddle_ts=3
-paddle_bs=4
+paddle_ls=0
+paddle_rs=1
+paddle_ts=2
+paddle_bs=3
 @ Position from paddle sides
 paddle_tl=paddle_ls
 paddle_tr=paddle_rs
@@ -338,13 +338,31 @@ drawPaddle:
 
     LDR  r0, [r5, #paddle_y]
     LDR  r1, [r5, #paddle_x]
-    LDRB r2, [r5, #paddle_corners_chars + paddle_ts] 
+    LDRB r2, [r5, #paddle_sides_chars + paddle_ts] 
     LDR  r3, [r5, #paddle_width]
     BL mvhline                                           @ mvhline(y, x, p_win->border.ts, w);
 
-    @ mvhline(y + h, x + 1, p_win->border.bs, w - 1);
-    @ mvvline(y + 1, x, p_win->border.ls, h - 1);
-    @ mvvline(y + 1, x + w, p_win->border.rs, h - 1);
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_height]
+    ADD  r0, r0, r1                                      @ y += height
+    LDR  r1, [r5, #paddle_x]
+    LDRB r2, [r5, #paddle_sides_chars + paddle_bs] 
+    LDR  r3, [r5, #paddle_width]
+    BL mvhline                                           @ mvhline(y + h, x + 1, p_win->border.bs, w - 1);
+
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_x]
+    LDRB r2, [r5, #paddle_sides_chars + paddle_ls] 
+    LDR  r3, [r5, #paddle_height]
+    BL  mvvline                                          @ mvvline(y + 1, x + w, p_win->border.rs, h - 1);
+
+    @LDR  r0, [r5, #paddle_y]
+    @LDR  r1, [r5, #paddle_x]
+    @LDR  r3, [r5, #paddle_width]
+    @ADD  r1, r1, r3
+    @LDRB r2, [r5, #paddle_sides_chars + paddle_rs] 
+    @LDR  r3, [r5, #paddle_height]
+    @BL  mvvline                                          @ mvvline(y + 1, x, p_win->border.ls, h - 1);
 
     @LDR  r0, [r5, #paddle_y]
     @LDR  r1, [r5, #paddle_x]
