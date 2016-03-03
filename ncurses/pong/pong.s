@@ -5,7 +5,7 @@
 .balign 4
 .data
 .section	.rodata
-DELAY:      .word 30000           @ 0.03s micro secondsi 10^-6 = 0.000001 
+DELAY:      .word 300000          @ 0.03s micro secondsi 10^-6 = 0.000001 
 PADDLE_CORNERS: .word 0x2B2B2B2B  @ 2B
 PADDLE_SIDES: .word 0x2D2D7C7C    @ 2D -, 7C |
 Balls:
@@ -185,18 +185,6 @@ main:
     LDR r6, [fp,#max_y]
     LDR r7, [fp,#counter]
     LDR r8, [fp,#boardInnerCharCnt]
-    
-    ADD r0, fp, #paddle1
-    MOV r1, #1
-    MOV r2, r5
-    MOV r3, r6
-    BL movePaddle
-    BL drawPaddle
-    BL refresh
-
-    MOV r1, #0x02
-    MOV r0, r1, LSL #24
-    BL usleep
                                    @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
     .Linf_while:
         ADD r0, fp, #ball1         @ Calculate the address of ball2
@@ -206,6 +194,16 @@ main:
         BL moveBall
         BL drawBall
 
+        ADD r0, fp, #paddle1
+        BL erasePaddle
+    MOV r0, r4                 @ r4 is DELAY 
+    BL usleep                  @ usleep - suspend execution for microsecond intervals
+    ADD r0, fp, #paddle1
+        MOV r1, #1
+        MOV r2, r6
+        BL movePaddle
+        BL drawPaddle
+
         BL refresh
 
         MOV r0, r4                 @ r4 is DELAY 
@@ -213,12 +211,14 @@ main:
 
         BL getch
         STR r0, [sp,#-4]!
+
+                                   @ Print char to screen
         MOV r2, r0                 @ char
-        SUB r0, r6, #1             @ y
-        SUB r1, r5, #1             @ x
+        SUB r0, r6, #1             @ y = max_y - 1
+        SUB r1, r5, #1             @ x = max_x - 1
         BL mvaddch
         LDR r0, [sp], #4
-
+ 
     CMP r0, #EXIT_KEY
     BNE .Linf_while
 
@@ -312,11 +312,16 @@ movePaddle:
     LDR r4, [r0, #paddle_vY]        @ Increment y by vY
     LDR r5, [r0, #paddle_y]
     MLA r5, r4, r1, r5              @ Mul by direction add it to y
-
-    CMP r5, r2
-        MOVHI r5, r2
+    
     CMP r5, #1
         MOVLO r5, #1
+
+    LDR r3, [r0, #paddle_height]
+    ADD r5, r5, r3                  @ y += paddleHeight
+    SUB r2, r2, #1                  @ max_y - 1
+    CMP r5, r2
+        SUBHI r2, r2, r3            @ y = max_y - paddleHeight
+        MOVHI r5, r2
 
     STR r5, [r0, #paddle_y]
 .LmovePaddle_End:
@@ -331,16 +336,9 @@ movePaddle:
 @└─────────────────────────────────────────────────┘  
 .FUNC drawPaddle
 drawPaddle:
-    STMFD sp!, {r4-r7,fp,lr}       @ Keep 8byte aligned
-    MOV fp, sp 
+    STMFD sp!, {r4-r6,lr}                               @ Keep 8byte aligned
 
     MOV r5, r0
-
-    LDR  r0, [r5, #paddle_y]
-    LDR  r1, [r5, #paddle_x]
-    LDRB r2, [r5, #paddle_sides_chars + paddle_ts] 
-    LDR  r3, [r5, #paddle_width]
-    BL mvhline                                           @ mvhline(y, x, p_win->border.ts, w);
 
     LDR  r0, [r5, #paddle_y]
     LDR  r1, [r5, #paddle_height]
@@ -352,37 +350,101 @@ drawPaddle:
 
     LDR  r0, [r5, #paddle_y]
     LDR  r1, [r5, #paddle_x]
+    LDRB r2, [r5, #paddle_sides_chars + paddle_ts] 
+    LDR  r3, [r5, #paddle_width]
+    BL mvhline                                           @ mvhline(y, x, p_win->border.ts, w);
+
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_x]
     LDRB r2, [r5, #paddle_sides_chars + paddle_ls] 
     LDR  r3, [r5, #paddle_height]
     BL  mvvline                                          @ mvvline(y + 1, x + w, p_win->border.rs, h - 1);
 
-    @LDR  r0, [r5, #paddle_y]
-    @LDR  r1, [r5, #paddle_x]
-    @LDR  r3, [r5, #paddle_width]
-    @ADD  r1, r1, r3
-    @LDRB r2, [r5, #paddle_sides_chars + paddle_rs] 
-    @LDR  r3, [r5, #paddle_height]
-    @BL  mvvline                                          @ mvvline(y + 1, x, p_win->border.ls, h - 1);
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_x]
+    LDR  r3, [r5, #paddle_width]
+    ADD  r1, r1, r3
+    LDRB r2, [r5, #paddle_sides_chars + paddle_rs] 
+    LDR  r3, [r5, #paddle_height]
+    BL  mvvline                                          @ mvvline(y + 1, x, p_win->border.ls, h - 1);
 
-    @LDR  r0, [r5, #paddle_y]
-    @LDR  r1, [r5, #paddle_x]
-    @LDRB r2, [r5, #paddle_corners_chars + paddle_tl] 
-    @BL mvaddch                                           @ mvaddch(y, x, p_win->border.tl);
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_x]
+    LDRB r2, [r5, #paddle_corners_chars + paddle_tl] 
+    BL mvaddch                                           @ mvaddch(y, x, p_win->border.tl);
     
-    @LDR r0, [r5, #paddle_y]
-    @LDR r1, [r5, #paddle_x]
-    @LDR r3, [r5, #paddle_width]
-    @ADD r1, r1, r3
-    @LDRB r2, [r5, #paddle_corners_chars + paddle_tr] 
-    @BL mvaddch                                           @ mvaddch(y, x + w, p_win->border.tr);
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_x]
+    LDR  r3, [r5, #paddle_width]
+    ADD  r1, r1, r3
+    LDRB r2, [r5, #paddle_corners_chars + paddle_tr] 
+    BL mvaddch                                           @ mvaddch(y, x + w, p_win->border.tr);
 
-    @ mvaddch(y + h, x + w, p_win->border.br);
-    @ mvaddch(y + h, x, p_win->border.bl);
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_height]
+    ADD  r0, r0, r1                                      @ y += height
+    LDR  r1, [r5, #paddle_x]
+    LDR  r3, [r5, #paddle_width]
+    ADD  r1, r1, r3
+    LDRB r2, [r5, #paddle_corners_chars + paddle_br] 
+    BL mvaddch                                           @ mvaddch(y + h, x + w, p_win->border.br);
 
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_height]
+    ADD  r0, r0, r1                                      @ y += height
+    LDR  r1, [r5, #paddle_x]
+    LDRB r2, [r5, #paddle_corners_chars + paddle_bl] 
+    BL mvaddch                                           @ mvaddch(y + h, x, p_win->border.bl);
+    
+    MOV r0, r5                                           @ return &paddle
 .LdrawPaddle_End:
  @─────────────────────────────────────────────────
-    MOV sp, fp
-    LDMFD sp!, {r4-r7,fp,pc}
+    LDMFD sp!, {r4-r6,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ erasePaddle()                                   │
+@│ param(r0): &paddle                              │
+@│ return: &paddle                                 │
+@└─────────────────────────────────────────────────┘  
+.FUNC erasePaddle
+erasePaddle:
+    STMFD sp!, {r4-r6,lr}       @ Keep 8byte aligned
+
+    MOV r5, r0
+
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_height]
+    ADD  r0, r0, r1                                      @ y += height
+    LDR  r1, [r5, #paddle_x]
+    MOV  r2, #KEY_SPACE
+    LDR  r3, [r5, #paddle_width]
+    BL mvhline                                           @ mvhline(y + h, x + 1, p_win->border.bs, w - 1);
+
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_x]
+    MOV  r2, #KEY_SPACE
+    LDR  r3, [r5, #paddle_width]
+    BL mvhline                                           @ mvhline(y, x, p_win->border.ts, w);
+
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_x]
+    MOV  r2, #KEY_SPACE
+    LDR  r3, [r5, #paddle_height]
+    BL  mvvline                                          @ mvvline(y + 1, x + w, p_win->border.rs, h - 1);
+
+    LDR  r0, [r5, #paddle_y]
+    LDR  r1, [r5, #paddle_x]
+    LDR  r3, [r5, #paddle_width]
+    ADD  r1, r1, r3
+    MOV  r2, #KEY_SPACE
+    LDR  r3, [r5, #paddle_height]
+    BL  mvvline                                          @ mvvline(y + 1, x, p_win->border.ls, h - 1);
+    
+    MOV r0, r5                                           @ return &paddle
+.LerasePaddle_End:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r4-r6,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
