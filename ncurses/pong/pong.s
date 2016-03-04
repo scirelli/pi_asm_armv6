@@ -186,41 +186,42 @@ main:
     LDR r7, [fp,#counter]
     LDR r8, [fp,#boardInnerCharCnt]
                                    @ r4=DELAY; r5=max_x; r6=max_y; r7=counter; r8=boardInnerCharCnt
+    SUB sp, sp, #4                 @ char
     .Linf_while:
         ADD r0, fp, #ball1         @ Calculate the address of ball2
         BL eraseBall
-        MOV r1, r5
-        MOV r2, r6
-        BL moveBall
-        BL drawBall
-
         ADD r0, fp, #paddle1
         BL erasePaddle
-    MOV r0, r4                 @ r4 is DELAY 
-    BL usleep                  @ usleep - suspend execution for microsecond intervals
-    ADD r0, fp, #paddle1
-        MOV r1, #1
-        MOV r2, r6
-        BL movePaddle
-        BL drawPaddle
-
-        BL refresh
-
-        MOV r0, r4                 @ r4 is DELAY 
-        BL usleep                  @ usleep - suspend execution for microsecond intervals
+        ADD r0, fp, #paddle2
+        BL erasePaddle
 
         BL getch
-        STR r0, [sp,#-4]!
-
+        STR r0, [sp]
+        CMP r0, #EXIT_KEY
+        BEQ .Lend_while
                                    @ Print char to screen
         MOV r2, r0                 @ char
         SUB r0, r6, #1             @ y = max_y - 1
         SUB r1, r5, #1             @ x = max_x - 1
         BL mvaddch
-        LDR r0, [sp], #4
+
+        LDR r0, [sp]
+        BL processInput
+
+        ADD r0, fp, #ball1         @ Calculate the address of ball2
+        MOV r1, r5
+        MOV r2, r6
+        BL moveBall
+        BL drawBall
+
+        BL refresh
+
+        MOV r0, r4                 @ r4 is DELAY 
+        BL usleep                  @ usleep - suspend execution for microsecond intervals
  
-    CMP r0, #EXIT_KEY
-    BNE .Linf_while
+    BAL .Linf_while
+    .Lend_while:
+    ADD sp, sp, #4                 @ reset the stack
 
 .Lmain_end:
     BL endwin
@@ -276,7 +277,7 @@ initPaddle:
     MOV r1, #5                      @ paddle_x
     MOV r2, #5                      @ paddle_y
     MOV r3, #1                      @ paddle_vX
-    MOV r4, #1                      @ paddle_vY
+    MOV r4, #5                      @ paddle_vY
     MOV r5, r0                      @ paddle_window 
     LDR r6, =PADDLE_CORNERS
     LDR r6, [r6]                    @ paddle_corners_chars
@@ -314,14 +315,14 @@ movePaddle:
     MLA r5, r4, r1, r5              @ Mul by direction add it to y
     
     CMP r5, #1
-        MOVLO r5, #1
+        MOVLT r5, #1
 
     LDR r3, [r0, #paddle_height]
-    ADD r5, r5, r3                  @ y += paddleHeight
+    ADD r4, r5, r3                  @ b = y + paddleHeight
     SUB r2, r2, #1                  @ max_y - 1
-    CMP r5, r2
-        SUBHI r2, r2, r3            @ y = max_y - paddleHeight
-        MOVHI r5, r2
+    CMP r4, r2
+        SUBGT r2, r2, r3            @ y = max_y - paddleHeight
+        MOVGT r5, r2
 
     STR r5, [r0, #paddle_y]
 .LmovePaddle_End:
@@ -419,6 +420,7 @@ erasePaddle:
     LDR  r1, [r5, #paddle_x]
     MOV  r2, #KEY_SPACE
     LDR  r3, [r5, #paddle_width]
+    ADD r3, r3, #1
     BL mvhline                                           @ mvhline(y + h, x + 1, p_win->border.bs, w - 1);
 
     LDR  r0, [r5, #paddle_y]
