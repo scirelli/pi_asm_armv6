@@ -8,6 +8,12 @@
 DELAY:      .word 300000          @ 0.03s micro secondsi 10^-6 = 0.000001 
 PADDLE_CORNERS: .word 0x2B2B2B2B  @ 2B
 PADDLE_SIDES: .word 0x2D2D7C7C    @ 2D -, 7C |
+
+PLAYER1_UP: .word 0x77
+PLAYER1_DOWN: .word 0x73
+PLAYER2_UP: .word 0x103
+PLAYER2_DOWN: .word 0x102
+
 Balls:
 
 Paddles:
@@ -198,7 +204,7 @@ main:
         BL getch
         STR r0, [sp]
         CMP r0, #EXIT_KEY
-        BEQ .Lend_while
+            BEQ .Lend_while
                                    @ Print char to screen
         MOV r2, r0                 @ char
         SUB r0, r6, #1             @ y = max_y - 1
@@ -206,19 +212,27 @@ main:
         BL mvaddch
 
         LDR r0, [sp]
-        BL processInput
+        MOV r1, fp                 @ kinda like using the this pointer
+        BL processInput            @ processInput( char c, gameObject* )
 
         ADD r0, fp, #ball1         @ Calculate the address of ball2
         MOV r1, r5
         MOV r2, r6
         BL moveBall
+        
+        MOV r0, fp
+        BL collisionDetect         @ collisionDetect( this )
+
         BL drawBall
+        ADD r0, fp, #paddle1
+        BL drawPaddle
+        ADD r0, fp, #paddle2
+        BL drawPaddle
 
         BL refresh
 
         MOV r0, r4                 @ r4 is DELAY 
         BL usleep                  @ usleep - suspend execution for microsecond intervals
- 
     BAL .Linf_while
     .Lend_while:
     ADD sp, sp, #4                 @ reset the stack
@@ -547,11 +561,90 @@ eraseBall:
     LDMFD sp!, {r0,r4,r5,pc}
 .ENDFUNC
 
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ processInput()                                  │
+@│ param(r0): key press char                       │
+@│ param(r1): this pointer                         │
+@│ return                                          │
+@└─────────────────────────────────────────────────┘  
+.FUNC processInput
+processInput:
+    STMFD sp!, {r0,r4,r5,r6,fp,lr}           @ Keep 8byte aligned
+    MOV fp, sp 
+
+    LDR r2, =PLAYER1_UP
+    LDR r2, [r2]
+    LDR r3, =PLAYER1_DOWN
+    LDR r3, [r3]
+    LDR r4, =PLAYER2_UP
+    LDR r4, [r4]
+    LDR r5, =PLAYER2_DOWN
+    LDR r5, [r5]
+
+    CMP r0, r2
+        BEQ .Lplayer1_up
+    CMP r0, r3
+        BEQ .Lplayer1_down
+    CMP r0, r4
+        BEQ .Lplayer2_up
+    CMP r0, r5
+        BEQ .Lplayer2_down
+    BAL .Ldefault
+
+    .Lplayer1_up:
+        ADD r0, r1, #paddle1
+        ADD r2, r1, #max_y
+        MOV r1, #-1
+        movePaddle                     @ movePaddle( &paddle, direction, max_y )
+        BAL .Lbreak
+    .Lplayer1_down:
+        ADD r0, r1, #paddle1
+        ADD r2, r1, #max_y
+        MOV r1, #1
+        movePaddle                     @ movePaddle( &paddle, direction, max_y )
+        BAL .Lbreak
+
+    .Lplayer2_up:
+        ADD r0, r1, #paddle2
+        ADD r2, r1, #max_y
+        MOV r1, #-1
+        movePaddle                     @ movePaddle( &paddle, direction, max_y )
+        BAL .Lbreak
+    .Lplayer2_down:
+        ADD r0, r1, #paddle2
+        ADD r2, r1, #max_y
+        MOV r1, #1
+        movePaddle                     @ movePaddle( &paddle, direction, max_y )
+        BAL .Lbreak
+    
+    .Ldefault:
+        BAL .Lbreak
+
+    .Lbreak:
+.LprocessInput_End:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r0,r4,r5,r6,fp,pc}
+.ENDFUNC
+
+@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@│ collisionDetect()                               │
+@│ param(r0): this pointer                         │
+@│ return                                          │
+@└─────────────────────────────────────────────────┘  
+.FUNC collisionDetect
+collisionDetect:
+    STMFD sp!, {r0,r4,r5,lr}           @ Keep 8byte aligned
+
+.LcollisionDetect_End:
+ @─────────────────────────────────────────────────
+    LDMFD sp!, {r0,r4,r5,pc}
+.ENDFUNC
+
 @####################################################################################
 @##################################### Notes ########################################
 @####################################################################################
 @
-@ 
+
 @ 
 @ 
 @ wmove(result, 0, 0);

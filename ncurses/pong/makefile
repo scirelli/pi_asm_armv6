@@ -18,3 +18,6 @@ clean:
 
 run: $(FILE)
 	./$(FILE); echo $$?;
+
+getch:
+	gcc -std=c11 -lncurses -o getch getch.c
