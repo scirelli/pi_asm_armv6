@@ -5,7 +5,7 @@
 .balign 4
 .data
 .section	.rodata
-DELAY:      .word 300000          @ 0.03s micro secondsi 10^-6 = 0.000001 
+DELAY:      .word 30000           @ 0.03s; micro secondsi 10^-6 = 0.000001 
 PADDLE_CORNERS: .word 0x2B2B2B2B  @ 2B
 PADDLE_SIDES: .word 0x2D2D7C7C    @ 2D -, 7C |
 
@@ -171,10 +171,17 @@ main:
     MOV r5, #BALL                   @ Ball char
     STMEA r0, {r1,r2,r3,r4,r5}
 
+
     ADD r0, fp, #paddle1            @ &paddle1
+    MOV r1, #1
+    LDR r2, [fp,#max_x]             @
+    LDR r3, [fp,#max_y]             @
     BL initPaddle
 
     ADD r0, fp, #paddle2            @ &paddle2
+    MOV r1, #2
+    LDR r2, [fp,#max_x]             @ 
+    LDR r3, [fp,#max_y]             @ 
     BL initPaddle
 
     BL clear
@@ -221,6 +228,7 @@ main:
         BL moveBall
         
         MOV r0, fp
+        ADD r1, fp, #ball1
         BL collisionDetect         @ collisionDetect( this )
 
         BL drawBall
@@ -272,24 +280,37 @@ getmaxxy:
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ initPaddle()                                    │
 @│ param(r0): &paddle                              │
-@│ param(r1): paddle width                         │
-@│ param(r2): paddle height                        │
+@│ param(r1): Paddle 1 or 2                        │
+@│ param(r2): max_x                                │
+@│ param(r3): max_y                                │
 @│ return (r0): &paddle                            │
 @└─────────────────────────────────────────────────┘  
 .FUNC initPaddle
+    PADDLE_WIDTH=3
+    PADDLE_HEIGHT=7
 initPaddle:
     STMFD sp!, {r0,r4-r10,fp,lr}    @ Keep 8byte aligned
 
+
     MOV r10, r0
+    MOV r9, r1
+    MOV r8, r2
+    MOV r7, r3
 
     MOV r0, #5                      @ newwin(height, width, starty, startx);
     MOV r1, #15
     MOV r2, #5
     MOV r3, #5
     BL newwin
+    
+    MOV r1, r9
+    MOV r2, r8
+    MOV r3, r7
+    CMP r1, #1
+        MOVEQ r1, #5                   @ paddle_x
+        SUBNE r1, r2, #5+PADDLE_WIDTH  @ paddle_x
+    MOV r2, r3, LSR #1                 @ paddle_y
 
-    MOV r1, #5                      @ paddle_x
-    MOV r2, #5                      @ paddle_y
     MOV r3, #1                      @ paddle_vX
     MOV r4, #5                      @ paddle_vY
     MOV r5, r0                      @ paddle_window 
@@ -297,8 +318,8 @@ initPaddle:
     LDR r6, [r6]                    @ paddle_corners_chars
     LDR r7, =PADDLE_SIDES
     LDR r7, [r7]                    @ paddle_sides_chars
-    MOV r8, #3                      @ paddle_width
-    MOV r9, #7                      @ paddle_height
+    MOV r8, #PADDLE_WIDTH           @ paddle_width
+    MOV r9, #PADDLE_HEIGHT          @ paddle_height
     STMEA r10, {r1-r9}
 
     MOV r1, #0                      @ box(local_win, 0 , 0); 0, 0 gives default characters for the vertical and horizontal lines
@@ -307,7 +328,6 @@ initPaddle:
 
     @MOV r0, r5                      @ wrefresh(local_win); Show that box
     @BL wrefresh
-    MOV r0, r10
 .LinitPaddle_End:
 @─────────────────────────────────────────────────
     LDMFD sp!, {r0,r4-r10,fp,pc}
@@ -569,8 +589,7 @@ eraseBall:
 @└─────────────────────────────────────────────────┘  
 .FUNC processInput
 processInput:
-    STMFD sp!, {r0,r4,r5,r6,fp,lr}           @ Keep 8byte aligned
-    MOV fp, sp 
+    STMFD sp!, {r4,r5,fp,lr}           @ Keep 8byte aligned
 
     LDR r2, =PLAYER1_UP
     LDR r2, [r2]
@@ -593,51 +612,156 @@ processInput:
 
     .Lplayer1_up:
         ADD r0, r1, #paddle1
-        ADD r2, r1, #max_y
+        LDR r2, [r1, #max_y]
         MOV r1, #-1
-        movePaddle                     @ movePaddle( &paddle, direction, max_y )
+        BL movePaddle                     @ movePaddle( &paddle, direction, &max_y )
         BAL .Lbreak
     .Lplayer1_down:
         ADD r0, r1, #paddle1
-        ADD r2, r1, #max_y
+        LDR r2, [r1, #max_y]
         MOV r1, #1
-        movePaddle                     @ movePaddle( &paddle, direction, max_y )
+        BL movePaddle                     @ movePaddle( &paddle, direction, max_y )
         BAL .Lbreak
 
     .Lplayer2_up:
         ADD r0, r1, #paddle2
-        ADD r2, r1, #max_y
+        LDR r2, [r1, #max_y]
         MOV r1, #-1
-        movePaddle                     @ movePaddle( &paddle, direction, max_y )
+        BL movePaddle                     @ movePaddle( &paddle, direction, max_y )
         BAL .Lbreak
     .Lplayer2_down:
         ADD r0, r1, #paddle2
-        ADD r2, r1, #max_y
+        LDR r2, [r1, #max_y]
         MOV r1, #1
-        movePaddle                     @ movePaddle( &paddle, direction, max_y )
+        BL movePaddle                     @ movePaddle( &paddle, direction, max_y )
         BAL .Lbreak
     
     .Ldefault:
         BAL .Lbreak
-
+ 
     .Lbreak:
 .LprocessInput_End:
  @─────────────────────────────────────────────────
-    LDMFD sp!, {r0,r4,r5,r6,fp,pc}
+    LDMFD sp!, {r4,r5,fp,pc}
 .ENDFUNC
 
 @┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
 @│ collisionDetect()                               │
-@│ param(r0): this pointer                         │
-@│ return                                          │
+@│ param(r0): this* pointer                        │
+@│ param(r1): ball*                                │
+@│ return: ball*                                   │
 @└─────────────────────────────────────────────────┘  
 .FUNC collisionDetect
 collisionDetect:
-    STMFD sp!, {r0,r4,r5,lr}           @ Keep 8byte aligned
+    STMFD sp!, {r4,r5,fp,lr}               @ Keep 8byte aligned
+
+    ADD r2, r0, #paddle1                   @ Collision check for ball1 and paddle1. Paddle one is on the left side
+                                           @ r0=this, r1=ball*, r2=paddle1
+
+    .Lcheck_top_side:                            @ Check for top of paddle for collision
+@        LDR r3, [r1, #ball_x]              
+@        LDR r4, [r2, #paddle_x]
+@        CMP r3, r4                         
+@          BLO .Lcheck_front_side         
+@                                                 @ ball_x >= paddle_x
+@            LDR r5, [r2, #paddle_width]
+@            ADD r4, r4, r5                       @ paddle_x + paddle_width
+@            CMP r3, r4                           @ ball_x <= (paddle_x + paddle_width)
+@              BHI .Lcheck_front_side
+@                                                 @ At this point ballX >= paddleX && ballX <= (paddleX + paddleWidth)
+@                LDR r3, [r1, #ball_y]            @ Check ball's y coordinate
+@                LDR r4, [r2, #paddle_y]
+@                CMP r3, r4                       @ ball_y >= paddle_y
+@                  BLO .Lcheck_front_side
+@                    LDR r5, [r2, #paddle_height]                
+@                    ADD r4, r4, r5               @ paddle_y + paddle_height
+@                    CMP r3, r4                   @ ball_y <= (paddle_y + paddle_height)
+@                      BHI .Lcheck_front_side
+@                                                     @ There's a collision. Check if it's on the top.
+@                        LSR r4, #1                   @ paddle_y + paddle_height/2
+@                        CMP r3, r4                   @ ball_y <= (paddle_y + paddle_height/2)
+@                          BHI .Lhit_bottom_side
+@                                                     @ If Hit the top
+@                            LDR r3, [r1, #ball_vY]   @ So reverse vY
+@                            MVN r3, r3
+@                            ADD r3, r3, #1
+@                            STR r3, [r1, #ball_vY]
+@                            SUB r4, r4, #1
+@                            STR r4, [r1, #ball_y]        @ Set ball's y above the paddle
+@                          BAL .LcollisionDetect_End
+@                                                         @ else hit bottom
+@                          .Lhit_bottom_side:
+@                            LDR r3, [r1, #ball_vY]       @ So reverse vY
+@                            MVN r3, r3
+@                            ADD r3, r3, #1
+@                            STR r3, [r1, #ball_vY]
+@
+@                            LDR r4, [r2, #paddle_y]
+@                            LDR r5, [r2, #paddle_height]                
+@                            ADD r4, r4, r5               @ paddle_y + paddle_height
+@                            ADD r4, r4, #1
+@                            STR r4, [r1, #ball_y]        @ Set ball's y below the paddle
+@                          BAL .LcollisionDetect_End
+
+    .Lpaddle1_check_front_side:
+        LDR r3, [r1, #ball_x]              
+        LDR r4, [r2, #paddle_x]
+        LDR r5, [r2, #paddle_width]
+        ADD r4, r4, r5                          @ paddle_x + paddle_width
+        CMP r3, r4                              @ ball_x <= (paddle_x + paddle_width)
+          BHI .Lpaddle2_check_front_side
+                                                @ 
+            LDR r3, [r1, #ball_y]              
+            LDR r4, [r2, #paddle_y]
+            CMP r3, r4                          @ ball_y >= paddle_y
+              BLO .Lpaddle2_check_front_side
+                LDR r5, [r2, #paddle_height]                
+                ADD r4, r4, r5                  @ paddle_y  + paddle_height
+                CMP r3, r4                      @ ball_y <= (paddle_y + paddle_height)
+                  BHI .Lpaddle2_check_front_side
+                                                @ There's a collision with the front side
+                    LDR r3, [r1, #ball_vX]      @ Reverse vX
+                    MVN r3, r3
+                    ADD r3, r3, #1
+                    STR r3, [r1, #ball_vX]      @ Reverse vX
+
+                    LDR r3, [r2, #paddle_x]     @ Put the ball back out side the line
+                    LDR r4, [r2, #paddle_width]
+                    ADD r3, r3, r4
+                    ADD r3, r3, #1
+                    STR r3, [r1, #ball_x]
+                  BAL .LcollisionDetect_End
+
+    .Lpaddle2_check_front_side:
+        ADD r2, r0, #paddle2                   @ Collision check for ball and paddle12 Paddle one is on the left side
+        LDR r3, [r1, #ball_x]              
+        LDR r4, [r2, #paddle_x]
+        CMP r3, r4                              @ ball_x >= paddle_x
+          BLO .LcollisionDetect_End
+                                                @ 
+            LDR r3, [r1, #ball_y]              
+            LDR r4, [r2, #paddle_y]
+            CMP r3, r4                          @ ball_y >= paddle_y
+              BLO .LcollisionDetect_End
+                LDR r5, [r2, #paddle_height]                
+                ADD r4, r4, r5                  @ paddle_y  + paddle_height
+                CMP r3, r4                      @ ball_y <= (paddle_y + paddle_height)
+                  BHI .LcollisionDetect_End
+                                                @ There's a collision with the front side
+                    LDR r3, [r1, #ball_vX]      @ Reverse vX
+                    MVN r3, r3
+                    ADD r3, r3, #1
+                    STR r3, [r1, #ball_vX]      @ Reverse vX
+
+                    LDR r3, [r2, #paddle_x]     @ Put the ball back out side the line
+                    SUB r3, r3, #1
+                    STR r3, [r1, #ball_x]
+                  BAL .LcollisionDetect_End
 
 .LcollisionDetect_End:
+    MOV r0, r1
  @─────────────────────────────────────────────────
-    LDMFD sp!, {r0,r4,r5,pc}
+    LDMFD sp!, {r4,r5,fp,pc}
 .ENDFUNC
 
 @####################################################################################
