@@ -23,4 +23,6 @@
 1. [Chapter 22](http://thinkingeek.com/2014/12/20/arm-assembler-raspberry-pi-chapter-22/)
 1. [Chapter 23](http://thinkingeek.com/2015/01/02/arm-assembler-raspberry-pi-chapter-23/)
 1. [Chapter 24](http://thinkingeek.com/2015/01/02/arm-assembler-raspberry-pi-chapter-24/)
-1. [Chapter 25](http://thinkingeek.com/2015/01/02/arm-assembler-raspberry-pi-chapter-25/)
+1. [Chapter 25](http://thinkingeek.com/2015/01/02/arm-assembler-raspberry-pi-chapter-25/)  
+
+# [Info Center Arm](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0588b/Cihihggj.html)
