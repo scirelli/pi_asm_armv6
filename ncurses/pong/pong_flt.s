@@ -51,6 +51,7 @@ EXIT_KEY=KEY_ESC
 
 @ Type Sizes
 int=4
+float=4
 char=4
 
 @############ Objects ######################
@@ -58,8 +59,8 @@ char=4
 @│ Ball           │
 @└────────────────┘  
 Ball_sz=20 @ sizeOf(Ball) = 20
-ball_x=0                         @ integer
-ball_y=4                         @ integer
+ball_x=0                         @ float
+ball_y=4                         @ float
 ball_vX=8                        @ float
 ball_vY=12                       @ float
 ball_char=16
@@ -68,8 +69,8 @@ ball_char=16
 @│ Paddle         │
 @└────────────────┘  
 Paddle_sz=36 @ sizeOf(Paddle)
-paddle_x=0                       @ integer
-paddle_y=4                       @ integer
+paddle_x=0                       @ float
+paddle_y=4                       @ float
 paddle_vX=8                      @ float
 paddle_vY=12                     @ float
 paddle_window=16
@@ -106,6 +107,11 @@ paddle_br=paddle_bs
     BL start_color
     MOV r0, #FALSE                  @ Hide the cursor.
     BL curs_set
+
+    LDR r0, .Lstdscr                @ stdscr is the default window created by the library. Whenever a window is not referenced the library assumes stdscr
+    LDR r0, [r0]
+    MOV r1, #TRUE
+    BL keypad                       @ Allows function keys like F1 and arrow keys
 .ENDM
 @###########################################
 
@@ -135,6 +141,7 @@ main:
     paddle2=paddle1-Paddle_sz;      @ fp-104 = paddle2;
 
     ADD sp, sp, #paddle2            @ Make room for max_y and max_x, counter, boardInnerCharCnt, ball1, paddle1, and paddle2. See EOF for pic of the stack, for a refresher.
+                                    @ paddle2 is a negative number
 
                                     @ Initcialize the vairables
     MOV   r0, #0                    @ boardInnerCharCnt = 0;
@@ -146,12 +153,7 @@ main:
     
     INIT_NCURSES                    @ Setup ncurses.
 
-    LDR r0, .Lstdscr                @ stdscr is the default window created by the library. Whenever a window is not referenced the library assumes stdscr
-    LDR r0, [r0]
-    MOV r1, #TRUE
-    BL keypad                       @ Allows function keys like F1 and arrow keys
-    
-    BL getmaxxy   
+    BL getmaxxy                     @ return: r0=window maxX, r1=window maxY
     STR r0, [fp,#max_x]             @ max_x = r0
     STR r1, [fp,#max_y]             @ max_y = r1
     MOV r5, r0                      @ max_x
