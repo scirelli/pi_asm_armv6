@@ -1,13 +1,13 @@
-@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@┍─────────────────────────────────────────────────────────────────────────────┑
 @│                             ASM Notes                                       │
 @│ GCC Assembler                                                               │
-@└─────────────────────────────────────────────────────────────────────────────┘  
+@└─────────────────────────────────────────────────────────────────────────────┘
 
 @Bit=1, Nibble = 4bits, Byte = 8bits, Halfword = 16bits, Word = 32bits, Doubleword = 64bits*/
 
 @ Almost every ARM instruction can be executed conditionally on the state of the ALU status flags in the Current Program Status Register (CPSR). Refer to Table 2.1 for a list of the suffixes to add to instructions to make them conditional.
 @ Table 2.1 http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0068b/ch02s05s02.html
-@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@┍─────────────────────────────────────────────────────────────────────────┑
 @│ Table 4.2./2.1 ARM condition codes                                      │
 @├─────────────────────────────────────────────────────────────────────────┤
 @│ Suffix  Flags                           Meaning                         │
@@ -29,7 +29,7 @@
 @│ NV      Never                                                           │
 @└─────────────────────────────────────────────────────────────────────────┘
 
-@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@┍────────────────────────────────┑
 @│      Twos complemen            │
 @└────────────────────────────────┘
 @ To represent a negative number in binary use twos complement. To represent a -3
@@ -40,10 +40,10 @@
 @    1111 1101 You get twos complement -3
 
 
-@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@┍────────────────────────────────┑
 @│ARM User Mode Registers Bank    │
 @└────────────────────────────────┘
-@┍━━━━━━━━━━━━━━━━━━━┑
+@┍───────────────────┑
 @├───────────────────┤
 @│ R0 │ Available    │
 @├───────────────────┤
@@ -81,7 +81,7 @@
 @│ Status register   │
 @└───────────────────┘
 
-@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@┍────────────────────────────────┑
 @│Status Register Configuration   │
 @└────────────────────────────────┘
  ┌─────────────────────────────────────┐
@@ -99,7 +99,7 @@
 @ J = Jazelle State. Allow running of a Java Virtual Machine
 @ Mode = processor mode. Usually user mode
 
-@┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+@┍────────────────────────────────┑
 @│ARM Instructions                │
 @└────────────────────────────────┘
 ldr r1, [r5,#1]   @ load register. load contents at location in r5 +1 byte
@@ -1289,3 +1289,9 @@ DEC	OCT	HEX	BIN	Symbol	HTML Number	HTML Name	Description
 254	376	FE	11111110	þ	&#254;	&thorn;	Latin small letter thorn
 255	377	FF	11111111	ÿ	&#255;	&yuml;	Latin small letter y with diaeresis
 
+@┍───────────────────────────┑
+@│      References           │
+@└───────────────────────────┘
+https://developer.arm.com/docs/dui0473/k/symbols-literals-expressions-and-operators/variables
+http://thinkingeek.com/2013/01/09/arm-assembler-raspberry-pi-chapter-1/
+http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0588b/Cihihggj.html
